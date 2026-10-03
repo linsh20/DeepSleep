@@ -46,7 +46,7 @@ const purchaseCheck = await checkPurchase(
 ## 验证
 
 ```bash
-pnpm run test:agent-b
-pnpm run lint
-pnpm run build
+npm run test:agent-b
+npm run lint
+npm run build
 ```
