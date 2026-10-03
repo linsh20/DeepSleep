@@ -1,8 +1,27 @@
 # Product search and data agent (A)
 
 This module recalls product facts. It does not parse user conversations, score
-recommendations, authorize purchases, or place orders. Existing UI and the legacy
-shopping-agent demo are independent of these APIs.
+recommendations, authorize purchases, or place orders. The homepage's product
+search panel uses these APIs through server-side route handlers. The legacy
+purchase demo is preserved in a separate collapsed section.
+
+## Homepage demo
+
+Run `npm run dev` and open `http://localhost:3000`. Click **Search products** to
+recall offers. Adjust the HKD budget or choose item-only/delivered scope; edit a
+field to clear stale results, then search again. **Look up missing facts** on
+Light Wireless Headphones fills weight to 180 g; Travel Wireless Headphones
+fills battery life to 32 hours. Some other missing facts remain unknown.
+**Exclude product** excludes every SKU/offer for that product and reruns search;
+**Reset exclusions** restores them. Demo facts are explicitly labeled Mock.
+
+The browser calls `POST /api/products/search` and `POST /api/products/verify`
+with the same JSON inputs as the public functions below. Both return a
+`SearchResult`, including structured errors (400 invalid input, 422 unsupported
+category, 503 source unavailable, 504 timeout). They are read-only and uncached.
+The client cancels superseded requests and checks task ID and requirement version
+before displaying results. No purchase decision or recommendation is generated
+by this panel; the old independent purchase demo remains available below it.
 
 ## Public API
 
@@ -158,7 +177,7 @@ missing facts, and details that fill weight or battery life. Speaker, keyboard,
 and power-bank records exercise other electronics queries.
 
 ```sh
-node --test tests/search-agent.test.mjs
+node --test tests/search-agent.test.mjs tests/product-search-http.test.mjs
 npx tsc --noEmit
 npm run lint
 npm run build

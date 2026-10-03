@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { ProductSearch } from "@/components/product-search"
 
 type Decision = {
   status: "APPROVED" | "BLOCKED"
@@ -82,6 +83,10 @@ export default function Home() {
           </p>
         </div>
 
+        <ProductSearch />
+
+        <details className="space-y-6">
+          <summary className="cursor-pointer text-sm text-muted-foreground">Legacy purchase demo</summary>
         <Card>
           <CardHeader>
             <CardTitle>Shopping Request</CardTitle>
@@ -226,6 +231,7 @@ export default function Home() {
             </CardContent>
           </Card>
         )}
+        </details>
 
       </div>
     </main>
