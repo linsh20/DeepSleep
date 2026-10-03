@@ -1,6 +1,6 @@
 import { productSearchResponse } from "../../../../lib/product-search-http"
-import { searchCandidates } from "../../../../services/search-agent"
+import { searchProducts } from "../../../../services/product-search"
 
 export async function POST(request: Request) {
-  return productSearchResponse(request, searchCandidates)
+  return productSearchResponse(request, searchProducts)
 }

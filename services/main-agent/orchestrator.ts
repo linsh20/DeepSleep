@@ -1,3 +1,4 @@
+import { validateContractResult } from "./shopping-result"
 import { randomUUID } from "node:crypto"
 import { clarify, completeRequirement, draftValue, intentValue, object } from "./requirement-interpreter"
 import type { RequirementInterpreter } from "./requirement-interpreter"
@@ -37,6 +38,7 @@ async function bounded<T>(call: (signal: AbortSignal) => Promise<T>, timeoutMs: 
 }
 function validateResult(raw: unknown): ShoppingPortResult {
   const r = object(raw)
+  if (r.kind === "shopping_contract_v1") return validateContractResult(r)
   if (typeof r.taskId !== "string" || !Number.isSafeInteger(r.requirementVersion) || r.dataEnvironment !== "development_mock") throw new TaskError("INVALID_INPUT", "无效 Shopping 结果")
   const base = { taskId: r.taskId, requirementVersion: Number(r.requirementVersion), dataEnvironment: "development_mock" as const }
   const text = (v: unknown) => {
@@ -113,6 +115,7 @@ export class MainTaskOrchestrator {
     task.requirementVersion++
     Object.assign(task, checked)
     task.requirement = completeRequirement(checked, task.taskId, task.requirementVersion)
+    if (task.shoppingResult) task.shoppingHistory = [...(task.shoppingHistory ?? []), { requirementVersion: task.requirementVersion - 1, result: task.shoppingResult, archivedAt: new Date().toISOString() }].slice(-10)
     task.shoppingResult = null
     task.shoppingRequest = null
     event(task, "requirement_updated", "需求变化使旧版本结果失效")
@@ -147,10 +150,11 @@ export class MainTaskOrchestrator {
           ? await this.search(taskId, userId, randomUUID(), applied.requirementVersion) : applied
         if (result.requirementVersion !== applied.requirementVersion || result.conversationRevision !== snapshot.conversationRevision) throw new TaskError("MODEL_SUPERSEDED", "任务已更新；请查看当前版本结果", 409)
         reply = result.status === "needs_clarification" ? result.clarificationQuestions.join("\n")
+          : result.status === "result_ready" && result.shoppingResult?.dataEnvironment === "verified_sources" ? "已返回来源可追溯的审核结果；仍不是实时结账报价或购买授权。"
           : result.status === "result_ready" ? "已返回 development_mock 模拟方案，商品事实未核验。正式购买执行尚未接入；沙盒测试需独立许可。"
-          : result.status === "needs_verification" ? "ShoppingStub 缺少关键事实，需要核验；未执行购买。"
-          : result.status === "no_match" ? "ShoppingStub 没有符合条件的方案。"
-          : result.status === "failed" ? "ShoppingStub 调用失败，请查看错误码；未执行购买。"
+          : result.status === "needs_verification" ? "商品缺少关键事实，需要核验；未执行购买。"
+          : result.status === "no_match" ? "当前搜索没有符合条件的方案。"
+          : result.status === "failed" ? "搜索或审核失败，请查看错误码；未执行购买。"
           : "当前版本正在搜索，请等待结果。"
       } catch (error) {
         const safe = error instanceof TaskError ? error : new TaskError("MODEL_UNAVAILABLE", "模型处理失败，原需求未修改")
@@ -196,7 +200,7 @@ export class MainTaskOrchestrator {
             retryable: !(error instanceof TaskError) || error.code === "TIMEOUT",
           } }
         }
-        if (result.status !== "failed" || !result.error.retryable) break
+        if (result.status !== "failed" || !result.error?.retryable) break
       }
       return this.repository.update(taskId, userId, task => {
         if (task.requirementVersion !== expectedVersion) { event(task, "stale_result_discarded", `拒绝应用旧版本 v${expectedVersion} 的结果`); return }

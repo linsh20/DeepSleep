@@ -1,9 +1,9 @@
 import type { Fact, Requirement, SearchErrorCode } from "../../types/index"
 
 // Proposed integration envelope, separate from MainTask. Reuses canonical Requirement/Fact.
-// No adapter to services/shopping-agent.ts is installed in this iteration.
+// Stub and contract envelopes coexist for persisted pre-integration tasks.
 export type ShoppingPortInput = { requirement: Requirement; quantity: number }
-export type ShoppingPortResult = {
+export type StubShoppingResult = {
   taskId: string
   requirementVersion: number
   dataEnvironment: "development_mock"
@@ -13,6 +13,8 @@ export type ShoppingPortResult = {
   | { status: "needs_verification"; missingFacts: string[] }
   | { status: "failed"; error: { code: SearchErrorCode; retryable: boolean } }
 )
+export type ContractShoppingResult = import("../shopping-agent").ShoppingAgentResult & { kind: "shopping_contract_v1"; searchInput: import("../../types").StructuredSearchInput; translation: import("./shopping-adapter").SearchTranslation }
+export type ShoppingPortResult = StubShoppingResult | ContractShoppingResult
 export interface ShoppingPort {
   search(input: ShoppingPortInput, signal: AbortSignal): Promise<ShoppingPortResult>
 }

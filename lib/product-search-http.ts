@@ -1,37 +1,55 @@
-import type { SearchResult } from "../types/shopping"
+import type { RankedSearchResult, StructuredSearchInput } from "../types"
 
-/** Shared transport for the read-only search/verification endpoints. */
-export async function productSearchResponse<T>(request: Request, action: (input: T) => Promise<SearchResult>): Promise<Response> {
-  let input: Record<string, unknown>
+export async function productSearchResponse(
+  request: Request,
+  action: (input: StructuredSearchInput) => Promise<RankedSearchResult>,
+): Promise<Response> {
+  const declaredLength = Number(request.headers.get("content-length"))
+  if (Number.isFinite(declaredLength) && declaredLength > 100_000) {
+    return failure("INVALID_INPUT: Request body is too large.", 400)
+  }
+  let input: unknown
   try {
-    const body: unknown = await request.json()
-    if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("Invalid body")
-    input = body as Record<string, unknown>
+    input = await request.json()
   } catch {
     return failure("INVALID_INPUT: Expected a JSON object.", 400)
   }
-  const requirement = input.requirement as Record<string, unknown> | undefined
-  if (!requirement || typeof requirement.taskId !== "string" ||
-      !Number.isSafeInteger(requirement.requirementVersion)) {
-    return failure("INVALID_INPUT: A task ID and requirement version are required.", 400)
-  }
-  const identity = { taskId: requirement.taskId, requirementVersion: requirement.requirementVersion as number }
-  if ([input.candidates, input.requests].some((items) => Array.isArray(items) && items.length > 100)) {
-    return failure("INVALID_INPUT: At most 100 candidates or requests are supported.", 400, identity)
-  }
   try {
-    const result = await action(input as T)
-    const status = result.status !== "failed" ? 200 :
-      result.warnings.some((item) => item.startsWith("INVALID_INPUT:")) ? 400 :
-      result.warnings.some((item) => item.startsWith("UNSUPPORTED_CATEGORY:")) ? 422 :
-      result.warnings.some((item) => item.startsWith("TIMEOUT:")) ? 504 : 503
+    const result = await action(input as StructuredSearchInput)
+    const status = result.status !== "failed" ? 200
+      : result.warnings.some((warning) => warning.startsWith("INVALID_INPUT:")) ? 400
+      : result.warnings.some((warning) => warning.startsWith("TIMEOUT:")) ? 504
+      : result.warnings.some((warning) => warning.startsWith("UNSUPPORTED_CATEGORY:")) ? 422
+      : 503
     return Response.json(result, { status, headers: { "Cache-Control": "no-store" } })
   } catch {
-    return failure("SOURCE_UNAVAILABLE: Unable to process the product request.", 503, identity)
+    return failure("SOURCE_UNAVAILABLE: Unable to process the product request.", 503, resultIdentity(input))
   }
 }
 
-function failure(warning: string, status: number, identity = { taskId: "", requirementVersion: 0 }): Response {
-  const result: SearchResult = { ...identity, candidates: [], status: "failed", warnings: [warning] }
+function failure(
+  warning: string,
+  status: number,
+  identity = { taskId: "", requirementVersion: 0 },
+): Response {
+  const result: RankedSearchResult = {
+    ...identity,
+    status: "failed",
+    outcome: "failed",
+    candidates: [],
+    filterLogs: [],
+    warnings: [warning],
+    message: "商品搜索失败。",
+  }
   return Response.json(result, { status, headers: { "Cache-Control": "no-store" } })
+}
+
+function resultIdentity(value: unknown): { taskId: string; requirementVersion: number } {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return { taskId: "", requirementVersion: 0 }
+  }
+  const record = value as Record<string, unknown>
+  return typeof record.taskId === "string" && Number.isSafeInteger(record.requirementVersion)
+    ? { taskId: record.taskId, requirementVersion: record.requirementVersion as number }
+    : { taskId: "", requirementVersion: 0 }
 }

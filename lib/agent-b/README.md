@@ -1,6 +1,14 @@
 # Agent B：决策与风控
 
-Agent B 只计算并返回结果，不修改主 Agent 的共享状态，也不执行购买。公共输入输出类型位于 `types/index.ts`。
+## 契约版入口（proposal-v1）
+
+支付方式优化已接入契约版 B：可传 `paymentContext`，返回 `paymentOptimization` 并保存选卡依据。按即时优惠、汇率和手续费比较当下扣款，返现只展示。字段与示例见 [支付对接文档](../../docs/agent-b-payment.md)。独立计算入口为 `payment.ts` 的 `optimizePaymentMethods`。
+
+新增 `contract.ts` 的 `evaluateShoppingCandidates`、`checkShoppingPurchase`、`explainDecision`，以及 `workflow.ts` 的 `createContractShoppingAgent`。完整接入方式、已实现规则和团队待统一字段见 [实现交接文档](../../docs/agent-b-implementation.md)。以下旧入口保留给尚未迁移的 A/网页；它们不支持新 quote 和偏好条件组，不可用于新契约请求。
+
+Agent B 只计算并返回结果，不修改主 Agent 的共享状态，也不执行购买。公共输入输出类型位于 `types/index.ts`。下一阶段的完整职责、字段契约、单一选择、异常低价审核和决策日志方案见 [Agent B 完整设计](../../docs/agent-b-design.md)。
+
+当前全部输出字段见 [Agent B 输出字段清单](../../docs/agent-b-output-fields.md)。
 
 A/B 统一编排入口为 `services/shopping-agent.ts`，详见 [联调约定](../../docs/agent-integration.md)。续航字段统一使用 `batteryLifeHours`（小时），需求版本从 0 开始也受支持。
 

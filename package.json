@@ -2,13 +2,16 @@
   "name": "deepsleep",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/index.test.ts",
-    "test": "node --test --experimental-strip-types lib/agent-b/index.test.ts tests/*.test.mjs"
+    "test": "node --test --experimental-strip-types lib/agent-b/*.test.ts tests/*.test.mjs",
+    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/*.test.ts tests/shopping-integration.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -31,8 +34,5 @@
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
     "typescript": "^5"
-  },
-  "engines": {
-    "node": ">=24.13.0"
   }
 }

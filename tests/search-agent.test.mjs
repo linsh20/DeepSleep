@@ -13,8 +13,8 @@ requireTS.extensions[".ts"] = (module, filename) => {
   })
   module._compile(outputText, filename)
 }
-const { searchCandidates, verifyFacts, createSearchAgent, buildSearchPlan } = requireTS("../services/search-agent.ts")
-const { MockProductProvider, ProductProviderError, identityKey } = requireTS("../services/product-provider.ts")
+const { searchCandidates, verifyFacts, createSearchAgent, buildSearchPlan } = requireTS("./legacy/search-agent.ts")
+const { MockProductProvider, ProductProviderError, identityKey } = requireTS("./legacy/product-provider.ts")
 
 function requirement(overrides = {}) {
   return {

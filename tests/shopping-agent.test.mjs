@@ -11,10 +11,10 @@ requireTS.extensions[".ts"] = (module, filename) => {
   })
   module._compile(outputText, filename)
 }
-const { createShoppingAgent, runShoppingTask } = requireTS("../services/shopping-agent.ts")
+const { createShoppingAgent, runShoppingTask } = requireTS("./legacy/shopping-agent.ts")
 const { evaluateCandidates, checkPurchase } = requireTS("../lib/agent-b/index.ts")
-const { createSearchAgent, buildSearchPlan } = requireTS("../services/search-agent.ts")
-const { matchesSearchPlan } = requireTS("../services/product-provider.ts")
+const { createSearchAgent, buildSearchPlan } = requireTS("./legacy/search-agent.ts")
+const { matchesSearchPlan } = requireTS("./legacy/product-provider.ts")
 const requirement = () => ({
   taskId: "integration", requirementVersion: 0, category: "Electronics",
   query: "headphones", currency: "HKD", budget: { maxMinor: 50000, scope: "delivered" },

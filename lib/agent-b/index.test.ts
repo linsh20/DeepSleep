@@ -4,7 +4,7 @@ import test from "node:test"
 import { checkPurchase, evaluateCandidates } from "./index.ts"
 import type {
   Authorization,
-  Candidate,
+  ShoppingCandidate,
   Fact,
   Requirement,
 } from "../../types/index.ts"
@@ -30,7 +30,7 @@ function candidate(
     priceMinutesOld?: number
     stock?: "available" | "unavailable"
   },
-): Candidate {
+): ShoppingCandidate {
   return {
     productId,
     skuId: `sku-${productId}`,

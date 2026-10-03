@@ -21,6 +21,7 @@ export type MainTask = Interpretation & {
   requirement: Requirement | null
   status: TaskStatus
   shoppingResult: ShoppingPortResult | null
+  shoppingHistory?: { requirementVersion: number; result: ShoppingPortResult; archivedAt: string }[]
   shoppingRequest?: import("./shopping-port").ShoppingPortInput | null
   conversationRevision?: number
   messages?: { requestId: string; role: "user" | "assistant"; content: string; at: string; errorCode?: string }[]

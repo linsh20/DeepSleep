@@ -1,7 +1,7 @@
 import type {
   AgentError,
   Authorization,
-  Candidate,
+  ShoppingCandidate,
   CheckPurchaseInput,
   Constraint,
   EvaluateCandidatesInput,
@@ -94,7 +94,7 @@ type ResolvedField =
     }
 
 type ScoredCandidate = {
-  candidate: Candidate
+  candidate: ShoppingCandidate
   score: number
   satisfied: string[]
   tradeoffs: string[]
@@ -158,6 +158,12 @@ export function assertRequirement(value: unknown): asserts value is Requirement 
   const issues: string[] = []
   if (!isRecord(value)) {
     throw new AgentBValidationError("购物需求输入无效", ["requirement 必须是对象"])
+  }
+
+  // Do not silently interpret new conditional preferences through the old numeric scorer.
+  if (value.allowAlternativeProducts !== undefined ||
+    Array.isArray(value.preferences) && value.preferences.some(p => isRecord(p) && p.conditions !== undefined)) {
+    throw new AgentBValidationError("新契约必须使用 evaluateShoppingCandidates", ["旧版调用链尚未支持条件组与替代许可"])
   }
 
   pushIf(issues, !isNonEmptyString(value.taskId), "taskId 不能为空")
@@ -268,7 +274,7 @@ export function assertRequirement(value: unknown): asserts value is Requirement 
   }
 }
 
-export function assertCandidate(value: unknown, path = "candidate"): asserts value is Candidate {
+export function assertCandidate(value: unknown, path = "candidate"): asserts value is ShoppingCandidate {
   const issues: string[] = []
   if (!isRecord(value)) {
     throw new AgentBValidationError("候选商品输入无效", [`${path} 必须是对象`])
@@ -368,7 +374,7 @@ export function assertAuthorization(
   }
 }
 
-function validateCandidates(candidates: unknown): asserts candidates is Candidate[] {
+function validateCandidates(candidates: unknown): asserts candidates is ShoppingCandidate[] {
   if (!Array.isArray(candidates)) {
     throw new AgentBValidationError("候选商品输入无效", ["candidates 必须是数组"])
   }
@@ -450,7 +456,7 @@ function resolveFact<T extends number | string | boolean>(
 }
 
 function resolveField(
-  candidate: Candidate,
+  candidate: ShoppingCandidate,
   rawField: string,
   policy: AgentBPolicy,
   now: Date,
@@ -541,7 +547,7 @@ function resolveField(
         reason: `offer.${field} 缺失`,
       }
     }
-    const fact = candidate.offer[field as keyof Candidate["offer"]]
+    const fact = candidate.offer[field as keyof ShoppingCandidate["offer"]]
     if (typeof fact === "string") {
       return { state: "known", value: fact, evidenceFields: ["offer.currency"] }
     }
@@ -573,6 +579,9 @@ function matchesConstraint(value: number | string | boolean, constraint: Constra
       return typeof value === "string" && Array.isArray(constraint.value) && constraint.value.includes(value)
     case "notIn":
       return typeof value === "string" && Array.isArray(constraint.value) && !constraint.value.includes(value)
+    case "containsAny":
+    case "notContainsAny":
+      throw new AgentBValidationError("请使用契约版 evaluateShoppingCandidates", ["旧入口不支持文本条件"])
   }
 }
 
@@ -584,7 +593,7 @@ function formatConstraint(constraint: Constraint): string {
 }
 
 function verificationRequest(
-  candidate: Candidate,
+  candidate: ShoppingCandidate,
   fields: string[],
   reason: string,
 ): VerificationRequest {
@@ -838,6 +847,9 @@ export async function evaluateCandidates(
   }
   assertRequirement(input.requirement)
   validateCandidates(input.candidates)
+  if (input.candidates.some(c => c.quote !== undefined)) {
+    throw new AgentBValidationError("新报价必须使用 evaluateShoppingCandidates", ["旧入口使用单件报价语义"])
+  }
 
   const policy = buildPolicy(options)
   validatePreferencePolicies(input.requirement, policy)
@@ -849,7 +861,7 @@ export async function evaluateCandidates(
   const rejected: EvaluationResult["rejected"] = []
   const verificationRequests: VerificationRequest[] = []
   const eligible: {
-    candidate: Candidate
+    candidate: ShoppingCandidate
     satisfied: string[]
     evidenceFields: string[]
     preferenceValues: Map<string, number>
@@ -933,7 +945,7 @@ export async function evaluateCandidates(
     }
 
     if (reasons.length > 0) {
-      rejected.push({ productId: candidate.productId, reasons })
+      rejected.push({ productId: candidate.productId, skuId: candidate.skuId, offerId: candidate.offerId, reasons })
       continue
     }
 
@@ -1175,6 +1187,9 @@ export async function checkPurchase(
   }
   assertRequirement(input.requirement)
   assertCandidate(input.candidate)
+  if (input.candidate.quote !== undefined) {
+    throw new AgentBValidationError("新报价必须使用 checkShoppingPurchase", ["整笔折扣不可进入旧购买公式"])
+  }
   if (!Number.isSafeInteger(input.quantity) || input.quantity < 1) {
     throw new AgentBValidationError("购买检查输入无效", ["quantity 必须是正安全整数"])
   }

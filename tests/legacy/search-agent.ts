@@ -1,11 +1,12 @@
+// Test-only frozen compatibility fixture for retained pre-integration regressions.
 import {
   canonicalField, identityKey, MockProductProvider, offerFields, ProductProviderError,
 } from "./product-provider"
 import type { ProductProvider, RawProduct } from "./product-provider"
 import type {
-  AttributeValue, Candidate, Fact, ProductIdentity, Requirement, SearchErrorCode,
+  AttributeValue, ShoppingCandidate as Candidate, Fact, ProductIdentity, Requirement, SearchErrorCode,
   SearchPlan, SearchResult, VerificationRequest,
-} from "../types/shopping"
+} from "../../types/shopping"
 
 type SearchInput = { requirement: Requirement; limit: number }
 type VerifyInput = { requirement: Requirement; candidates: Candidate[]; requests: VerificationRequest[] }

@@ -1,373 +1,114 @@
 [
   {
-    "productId": "product-soundpro",
-    "skuId": "sku-soundpro-black",
-    "offerId": "offer-soundpro-black-store-a",
-    "title": "SoundPro Wireless Headphones",
-    "url": "https://example.invalid/products/soundpro",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 240,
-      "batteryLifeHours": 30,
-      "color": "black",
-      "wireless": true,
-      "brand": "soundpro"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 39900,
-      "shippingMinor": 2000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-calm-01", "skuId": "calm-200", "offerId": "calm-200-a",
+    "title": "Calm Barrier 敏感肌保湿乳液", "url": "https://example.invalid/lotion/calm-barrier", "category": "skincare",
+    "searchableText": { "description": "敏感肌日常保湿补水乳液 sensitive skin moisturizing", "ingredients": "神经酰胺 角鲨烷 甘油", "tags": "低敏 unscented" },
+    "attributes": { "volumeMl": 200, "rating": 4.8, "salesCount": 15200 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 23800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-soundpro",
-    "skuId": "sku-soundpro-black",
-    "offerId": "offer-soundpro-black-store-a",
-    "title": "SoundPro Wireless Headphones",
-    "url": "https://example.invalid/products/soundpro",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 240,
-      "batteryLifeHours": 30,
-      "color": "black",
-      "wireless": true,
-      "brand": "soundpro"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 39900,
-      "shippingMinor": 2000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-calm-01", "skuId": "calm-200", "offerId": "calm-200-a",
+    "title": "Calm Barrier 敏感肌保湿乳液", "url": "https://example.invalid/lotion/calm-barrier", "category": "skincare",
+    "searchableText": { "description": "敏感肌日常保湿补水乳液 sensitive skin moisturizing", "ingredients": "神经酰胺 角鲨烷 甘油", "tags": "低敏 unscented" },
+    "attributes": { "volumeMl": 200, "rating": 4.8, "salesCount": 15200 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 23800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-soundpro",
-    "skuId": "sku-soundpro-white",
-    "offerId": "offer-soundpro-white-store-a",
-    "title": "SoundPro Wireless Headphones White",
-    "url": "https://example.invalid/products/soundpro",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 240,
-      "batteryLifeHours": 30,
-      "color": "white",
-      "wireless": true,
-      "brand": "soundpro"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 40900,
-      "shippingMinor": 2000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-hydra-02", "skuId": "hydra-150", "offerId": "hydra-150-a",
+    "title": "Hydra Cloud 补水乳液", "url": "https://example.invalid/lotion/hydra-cloud", "category": "skincare",
+    "searchableText": { "description": "清爽补水 moisturizing lotion", "ingredients": "透明质酸 甘油 fragrance", "tags": "清爽" },
+    "attributes": { "volumeMl": 150, "rating": 4.7, "salesCount": 24100 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 18800, "shippingMinor": 1500, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-soundpro",
-    "skuId": "sku-soundpro-black",
-    "offerId": "offer-soundpro-black-store-b",
-    "title": "SoundPro Wireless Headphones",
-    "url": "https://example.invalid/products/soundpro",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 240,
-      "batteryLifeHours": 30,
-      "color": "black",
-      "wireless": true,
-      "brand": "soundpro"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 38900,
-      "shippingMinor": 3500,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-pure-03", "skuId": "pure-120", "offerId": "pure-120-a",
+    "title": "Pure Daily Sensitive Skin Lotion", "url": "https://example.invalid/lotion/pure-daily", "category": "skincare",
+    "searchableText": { "description": "sensitive skin daily moisturizing lotion", "ingredients": "ceramide glycerin", "tags": "hypoallergenic unscented" },
+    "attributes": { "volumeMl": 120, "rating": 4.6, "salesCount": 9800 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 27800, "shippingMinor": 0, "discountMinor": 2000, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-audiomax",
-    "skuId": "sku-audiomax-black",
-    "offerId": "offer-audiomax-black-store-a",
-    "title": "AudioMax Wireless Headphones",
-    "url": "https://example.invalid/products/audiomax",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 260,
-      "batteryLifeHours": 40,
-      "color": "black",
-      "wireless": true,
-      "brand": "audiomax"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 45900,
-      "shippingMinor": 1500,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-botanic-04", "skuId": "botanic-250", "offerId": "botanic-250-a",
+    "title": "Botanic Repair 植物修护乳液", "url": "https://example.invalid/lotion/botanic-repair", "category": "skincare",
+    "searchableText": { "description": "修护保湿乳液，适合干燥肌肤", "ingredients": "芦荟 燕麦 alcohol", "tags": "植物配方" },
+    "attributes": { "volumeMl": 250, "rating": 4.5, "salesCount": 18700 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 16800, "shippingMinor": 2000, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-premium",
-    "skuId": "sku-premium-black",
-    "offerId": "offer-premium-black-store-a",
-    "title": "Premium Wireless Headphones",
-    "url": "https://example.invalid/products/premium",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 280,
-      "batteryLifeHours": 50,
-      "color": "black",
-      "wireless": true,
-      "brand": "premium"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 48000,
-      "shippingMinor": 4000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-derma-05", "skuId": "derma-300", "offerId": "derma-300-a",
+    "title": "Derma Balance 敏感肌乳液", "url": "https://example.invalid/lotion/derma-balance", "category": "skincare",
+    "searchableText": { "description": "敏感肌保湿，维持肌肤屏障", "ingredients": "神经酰胺 泛醇", "tags": "低敏 unscented" },
+    "attributes": { "volumeMl": 300, "rating": 4.9, "salesCount": 8200 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 31800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-studio",
-    "skuId": "sku-studio-black",
-    "offerId": "offer-studio-black-store-a",
-    "title": "Studio Wireless Headphones",
-    "url": "https://example.invalid/products/studio",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 310,
-      "batteryLifeHours": 60,
-      "color": "black",
-      "wireless": true,
-      "brand": "studio"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 89900,
-      "shippingMinor": 0,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-soft-06", "skuId": "soft-180", "offerId": "soft-180-a",
+    "title": "Soft Touch 保湿乳液", "url": "https://example.invalid/lotion/soft-touch", "category": "skincare",
+    "searchableText": { "description": "长效保湿补水乳液", "ingredients": "甘油 乳木果油", "tags": "家庭装" },
+    "attributes": { "volumeMl": 180, "rating": 4.4, "salesCount": 30500 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 12800, "shippingMinor": 1200, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-light",
-    "skuId": "sku-light-blue",
-    "offerId": "offer-light-blue-store-a",
-    "title": "Light Wireless Headphones",
-    "url": "https://example.invalid/products/light",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": null,
-      "batteryLifeHours": 24,
-      "color": "blue",
-      "wireless": true,
-      "brand": "light"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 29900,
-      "shippingMinor": 1000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    },
-    "details": {
-      "attributes": {
-        "weightGrams": 180
-      }
-    }
+    "productId": "lotion-ocean-07", "skuId": "ocean-100", "offerId": "ocean-100-a",
+    "title": "Ocean Moisture Lotion", "url": "https://example.invalid/lotion/ocean", "category": "skincare",
+    "searchableText": { "description": "light moisturizing for sensitive skin", "ingredients": "algae glycerin", "tags": "gentle" },
+    "attributes": { "volumeMl": 100, "rating": 4.3, "salesCount": 6300 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 10800, "shippingMinor": 800, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-travel",
-    "skuId": "sku-travel-black",
-    "offerId": "offer-travel-black-store-a",
-    "title": "Travel Wireless Headphones",
-    "url": "https://example.invalid/products/travel",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 220,
-      "batteryLifeHours": null,
-      "color": "black",
-      "wireless": true,
-      "brand": "travel"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 34900,
-      "shippingMinor": 2000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    },
-    "details": {
-      "attributes": {
-        "batteryLifeHours": 32
-      }
-    }
+    "productId": "lotion-night-08", "skuId": "night-200", "offerId": "night-200-a",
+    "title": "Night Restore 晚间乳液", "url": "https://example.invalid/lotion/night-restore", "category": "skincare",
+    "searchableText": { "description": "晚间修护补水 moisturizing", "ingredients": "烟酰胺 神经酰胺", "tags": "unscented" },
+    "attributes": { "volumeMl": 200, "rating": 4.7, "salesCount": 11700 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 29800, "shippingMinor": 0, "discountMinor": 3000, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-soldout",
-    "skuId": "sku-soldout-black",
-    "offerId": "offer-soldout-black-store-a",
-    "title": "Classic Wireless Headphones",
-    "url": "https://example.invalid/products/soldout",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 210,
-      "batteryLifeHours": 20,
-      "color": "black",
-      "wireless": true,
-      "brand": "soldout"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 19900,
-      "shippingMinor": 0,
-      "discountMinor": 0,
-      "stock": "unavailable",
-      "deliverable": true
-    }
+    "productId": "lotion-family-09", "skuId": "family-500", "offerId": "family-500-a",
+    "title": "Family Care 身体乳液", "url": "https://example.invalid/lotion/family-care", "category": "skincare",
+    "searchableText": { "description": "全家保湿身体乳液", "ingredients": "甘油 fragrance", "tags": "大容量" },
+    "attributes": { "volumeMl": 500, "rating": 4.6, "salesCount": 40200 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 15800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-unknown",
-    "skuId": "sku-unknown-black",
-    "offerId": "offer-unknown-black-store-a",
-    "title": "Mystery Wireless Headphones",
-    "url": "https://example.invalid/products/unknown",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": null,
-      "batteryLifeHours": null,
-      "color": "black",
-      "wireless": true,
-      "brand": "unknown"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 25900,
-      "shippingMinor": null,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": null
-    }
+    "productId": "lotion-mini-10", "skuId": "mini-50", "offerId": "mini-50-a",
+    "title": "Travel Calm 乳液", "url": "https://example.invalid/lotion/travel-calm", "category": "skincare",
+    "searchableText": { "description": "敏感肌旅行保湿乳液", "ingredients": "燕麦 甘油", "tags": "便携 unscented" },
+    "attributes": { "volumeMl": 50, "rating": 4.2, "salesCount": 5100 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 8800, "shippingMinor": 500, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-speaker",
-    "skuId": "sku-speaker-mini",
-    "offerId": "offer-speaker-mini-store-a",
-    "title": "Pocket Bluetooth Speaker",
-    "url": "https://example.invalid/products/speaker",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 400,
-      "batteryLifeHours": 12,
-      "color": "mini",
-      "wireless": true,
-      "brand": "speaker"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 15900,
-      "shippingMinor": 1500,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-lab-11", "skuId": "lab-220", "offerId": "lab-220-a",
+    "title": "Lab 11 Barrier Lotion", "url": "https://example.invalid/lotion/lab-11", "category": "skincare",
+    "searchableText": { "description": "barrier moisturizing sensitive skin", "ingredients": "ceramide panthenol", "tags": "hypoallergenic unscented" },
+    "attributes": { "volumeMl": 220, "rating": 4.8, "salesCount": 7600 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 28800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-keyboard",
-    "skuId": "sku-keyboard-us",
-    "offerId": "offer-keyboard-us-store-a",
-    "title": "Wireless Mechanical Keyboard",
-    "url": "https://example.invalid/products/keyboard",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 800,
-      "batteryLifeHours": 100,
-      "color": "us",
-      "wireless": true,
-      "brand": "keyboard"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 59900,
-      "shippingMinor": 0,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-mild-12", "skuId": "mild-160", "offerId": "mild-160-a",
+    "title": "Mild Dew 温和乳液", "url": "https://example.invalid/lotion/mild-dew", "category": "skincare",
+    "searchableText": { "description": "温和补水保湿", "ingredients": "角鲨烷 甘油", "tags": "敏感肌适用" },
+    "attributes": { "volumeMl": 160, "rating": 4.5, "salesCount": 12900 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 21800, "shippingMinor": 0, "discountMinor": 1000, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-powerbank",
-    "skuId": "sku-powerbank-10k",
-    "offerId": "offer-powerbank-10k-store-a",
-    "title": "USB Power Bank",
-    "url": "https://example.invalid/products/powerbank",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 190,
-      "batteryLifeHours": null,
-      "color": "10k",
-      "wireless": false,
-      "brand": "powerbank"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 14900,
-      "shippingMinor": 1000,
-      "discountMinor": 0,
-      "stock": "available",
-      "deliverable": true
-    }
+    "productId": "lotion-unknown-13", "skuId": "unknown-standard", "offerId": "unknown-a",
+    "title": "Mystery Sensitive 乳液", "url": "https://example.invalid/lotion/mystery", "category": "skincare",
+    "searchableText": { "description": "敏感肌 moisturizing", "ingredients": null, "tags": null },
+    "attributes": { "volumeMl": null, "rating": null, "salesCount": null },
+    "offer": { "currency": "HKD", "itemPriceMinor": null, "shippingMinor": null, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-catalog",
-    "skuId": null,
-    "offerId": null,
-    "title": "Upcoming Wireless Headphones",
-    "url": "https://example.invalid/products/catalog",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": null,
-      "batteryLifeHours": null,
-      "color": null,
-      "wireless": true,
-      "brand": "catalog"
-    },
-    "offer": null
+    "productId": "cream-rich-14", "skuId": "cream-100", "offerId": "cream-100-a",
+    "title": "Rich Barrier 面霜", "url": "https://example.invalid/cream/rich-barrier", "category": "skincare",
+    "searchableText": { "description": "敏感肌滋润面霜", "ingredients": "神经酰胺", "tags": "unscented" },
+    "attributes": { "volumeMl": 100, "rating": 4.9, "salesCount": 50000 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 26800, "shippingMinor": 0, "discountMinor": 0, "stock": "available", "deliverable": true }
   },
   {
-    "productId": "product-discount",
-    "skuId": "sku-discount-black",
-    "offerId": "offer-discount-black-store-a",
-    "title": "Value Wireless Headphones",
-    "url": "https://example.invalid/products/discount",
-    "category": "Electronics",
-    "attributes": {
-      "weightGrams": 230,
-      "batteryLifeHours": 35,
-      "color": "black",
-      "wireless": true,
-      "brand": "discount"
-    },
-    "offer": {
-      "currency": "HKD",
-      "itemPriceMinor": 52000,
-      "shippingMinor": 2000,
-      "discountMinor": 10000,
-      "stock": "available",
-      "deliverable": false
-    }
+    "productId": "lotion-soldout-15", "skuId": "soldout-200", "offerId": "soldout-a",
+    "title": "Gentle Care 敏感肌乳液", "url": "https://example.invalid/lotion/gentle-care", "category": "skincare",
+    "searchableText": { "description": "敏感肌保湿补水乳液", "ingredients": "甘油 燕麦", "tags": "unscented" },
+    "attributes": { "volumeMl": 200, "rating": 4.9, "salesCount": 35000 },
+    "offer": { "currency": "HKD", "itemPriceMinor": 19800, "shippingMinor": 0, "discountMinor": 0, "stock": "unavailable", "deliverable": true }
   }
 ]

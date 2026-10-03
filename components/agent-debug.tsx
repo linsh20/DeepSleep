@@ -100,7 +100,7 @@ export function AgentDebug() {
   }
   return <main className="mx-auto w-full max-w-4xl space-y-5 p-6">
     <h1 className="text-2xl font-semibold">DeepSleep 主 Agent 调试</h1>
-    <p>自然语言对话使用真实模型理解需求；结构化表单可单独调试和修正。ShoppingStub 仍为 development_mock，未核验真实商品。</p>
+    <p>自然语言对话使用真实模型理解需求；结构化表单可单独调试和修正。Shopping 使用服务端配置的数据源；快照事实不等于实时结账事实，模拟数据会单独标注。</p>
     <p>仅供本地开发；任务和会话保存于 SQLite。沙盒购买需单独准备方案并明确许可；正式授权和真实购买未接入。</p>
     <Button onClick={start} disabled={busy}>开始新任务</Button>
     {error && <p role="alert" className="text-destructive">{error}</p>}
@@ -132,7 +132,7 @@ export function AgentDebug() {
       <Card><CardHeader><CardTitle>任务状态：{task.status}</CardTitle></CardHeader><CardContent className="space-y-3">
         <p>任务 {task.taskId} · 需求版本 v{task.requirementVersion} · 意图 {task.intent}</p>
         <p>{task.intent === "purchase" ? "返回搜索方案不代表已下单；沙盒购买状态在独立面板中展示。" : "当前任务仅展示方案，不创建购买或支付。"}</p>
-        <Button onClick={run} disabled={busy || !["ready_to_search", "failed"].includes(task.status)}>运行 ShoppingStub</Button>
+        <Button onClick={run} disabled={busy || !["ready_to_search", "failed"].includes(task.status)}>运行 Shopping 搜索与审核</Button>
         {lastCommand && <Button variant="outline" className="ml-2" disabled={busy} onClick={() => {
           setError(""); void send(lastCommand).catch(e => setError(String(e)))
         }}>重发上次请求（相同 requestId）</Button>}
@@ -145,10 +145,10 @@ export function AgentDebug() {
         <h2 className="font-semibold">偏好及相对权重（只读）</h2>
         <pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft.preferences ?? [], null, 2)}</pre>
         <p>预算 {task.requirementDraft.budget?.maxMinor ? `${minorToHKD(task.requirementDraft.budget.maxMinor)} HKD` : "未指定"} · {task.requirementDraft.budget?.scope === "delivered" ? "含运费总额" : "商品金额"} · 数量 {task.requirementDraft.quantity ?? "未指定"} · 配送 {task.requirementDraft.destination ?? "未指定"}</p>
-        <p>条件可通过聊天修改；此表单保存其他字段时保留条件。Stub 不判断真实商品是否满足条件，文本匹配不证明功效。</p>
+        <p>条件可通过聊天修改；此表单保存其他字段时保留条件。审核区分未知与不满足；文本匹配不证明功效。</p>
         <h2 className="font-semibold">实际传给 ShoppingPort 的请求（港仙；无对话或凭据）</h2>
         <pre className="overflow-auto text-sm">{task.shoppingRequest ? JSON.stringify(task.shoppingRequest, null, 2) : "当前版本尚未发送请求"}</pre>
-        <h2 className="font-semibold">ShoppingStub 结果（开发模拟 / 未核验）</h2>
+        <h2 className="font-semibold">Shopping 搜索与审核结果（保留来源、采集时间及核验状态）</h2>
         <pre className="overflow-auto whitespace-pre-wrap text-sm">{task.shoppingResult ? JSON.stringify(task.shoppingResult, null, 2) : "尚无当前版本结果"}</pre>
       </CardContent></Card>
       <AgentPurchaseDebug key={`${task.taskId}-${task.requirementVersion}`} task={task}/>

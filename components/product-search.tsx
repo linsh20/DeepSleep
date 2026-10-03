@@ -2,238 +2,236 @@
 
 import { useEffect, useRef, useState } from "react"
 import type { FormEvent } from "react"
-import type { Candidate, Fact, Requirement, SearchResult } from "@/types/shopping"
+import type { MustFlag, RankedSearchResult, StructuredSearchInput } from "@/types"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
-const fieldLabels: Record<string, string> = {
-  "attributes.weightGrams": "Weight", "attributes.batteryLifeHours": "Battery life",
-  "attributes.color": "Color", "attributes.brand": "Brand", "attributes.wireless": "Wireless support",
-  "offer.itemPriceMinor": "Item price", "offer.shippingMinor": "Shipping",
-  "offer.discountMinor": "Discount", "offer.stock": "Stock", "offer.deliverable": "Delivery",
-  skuId: "SKU", offerId: "Offer ID", offer: "Offer",
-}
-const keyFor = (candidate: Candidate) => JSON.stringify([candidate.productId, candidate.skuId, candidate.offerId])
-const money = (value: number | null | undefined, currency = "HKD") => value == null ? "Unknown" :
-  new Intl.NumberFormat("en-HK", { style: "currency", currency }).format(value / 100)
-const attribute = (fact: Fact<number | string | boolean> | undefined, unit: string) =>
-  fact?.value == null ? "Unknown" : `${fact.value} ${unit}`
-const verifiableFields = (candidate: Candidate) => candidate.missingFields.filter((field) =>
-  field.startsWith("attributes.") || (candidate.offer !== null && field.startsWith("offer.")))
-
 export function ProductSearch() {
-  const [query, setQuery] = useState("Wireless headphones")
-  const [budget, setBudget] = useState("500")
-  const [scope, setScope] = useState<Requirement["budget"]["scope"]>("delivered")
-  const [excluded, setExcluded] = useState<string[]>([])
-  const [snapshot, setSnapshot] = useState<{ requirement: Requirement; result: SearchResult } | null>(null)
-  const [pending, setPending] = useState<string | null>(null)
+  const [productName, setProductName] = useState("lotion")
+  const [volumeMin, setVolumeMin] = useState("100")
+  const [volumeMax, setVolumeMax] = useState("300")
+  const [priceMin, setPriceMin] = useState("100")
+  const [priceMax, setPriceMax] = useState("300")
+  const [includeMust, setIncludeMust] = useState("sensitive skin")
+  const [includePrefer, setIncludePrefer] = useState("moisturizing, moisturising, hydration")
+  const [excludeMust, setExcludeMust] = useState("alcohol, alcohol denat, ethanol")
+  const [excludePrefer, setExcludePrefer] = useState("fragrance, parfum")
+  const [useLlm, setUseLlm] = useState(true)
+  const [result, setResult] = useState<RankedSearchResult | null>(null)
+  const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
-  const [notice, setNotice] = useState("")
   const taskId = useRef<string | null>(null)
   const version = useRef(0)
   const active = useRef<AbortController | null>(null)
 
   useEffect(() => () => active.current?.abort(), [])
 
-  // Input edits immediately invalidate in-flight requests and their old results.
-  function invalidate() {
-    version.current++
-    active.current?.abort()
-    setPending(null)
-    setSnapshot(null)
-    setError("")
-    setNotice("")
-  }
-
-  async function send(endpoint: "search" | "verify", payload: object, requirement: Requirement, loading: string) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const parsed = parseInput()
+    if (!parsed) return
     active.current?.abort()
     const controller = new AbortController()
     active.current = controller
-    setPending(loading)
+    setPending(true)
     setError("")
-    setNotice("")
-    const timer = setTimeout(() => controller.abort(), 15000)
-    try {
-      const response = await fetch(`/api/products/${endpoint}`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload), signal: controller.signal,
-      })
-      const result = await response.json() as SearchResult
-      if (controller !== active.current || version.current !== requirement.requirementVersion) return
-      if (result.taskId !== requirement.taskId || result.requirementVersion !== requirement.requirementVersion ||
-          !Array.isArray(result.candidates) || !Array.isArray(result.warnings) ||
-          !["complete", "partial", "failed"].includes(result.status)) {
-        throw new Error("Invalid search response")
+    setResult(null)
+    const timer = setTimeout(() => controller.abort(), 150000)
+    void fetch("/api/products/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(parsed),
+      signal: controller.signal,
+    }).then(async (response) => {
+      const body = await response.json() as RankedSearchResult
+      if (controller !== active.current || parsed.requirementVersion !== version.current) return
+      if (body.taskId !== parsed.taskId || body.requirementVersion !== parsed.requirementVersion ||
+          !Array.isArray(body.candidates) || !Array.isArray(body.filterLogs) || !Array.isArray(body.warnings)) {
+        throw new Error("Invalid response")
       }
-      if (!response.ok && result.status !== "failed") throw new Error("Search request failed")
-      setSnapshot({ requirement, result })
-      if (endpoint === "verify") setNotice(result.status === "complete"
-        ? "Requested facts updated." : "Fact lookup finished. Some information could not be updated.")
-    } catch {
-      if (controller === active.current && version.current === requirement.requirementVersion) {
-        setError(controller.signal.aborted ? "The request timed out. Please try again." : "Could not reach the product service. Please try again.")
+      setResult(body)
+      if (!response.ok && body.status !== "failed") throw new Error("Search failed")
+    }).catch(() => {
+      if (controller === active.current && parsed.requirementVersion === version.current) {
+        setError(controller.signal.aborted ? "搜索请求超时，请重试。" : "无法连接商品搜索服务，请重试。")
       }
-    } finally {
+    }).finally(() => {
       clearTimeout(timer)
-      if (controller === active.current && version.current === requirement.requirementVersion) setPending(null)
-    }
+      if (controller === active.current && parsed.requirementVersion === version.current) setPending(false)
+    })
   }
 
-  function search(excludedProductIds = excluded) {
-    if (!query.trim() || !/^\d+(\.\d{1,2})?$/.test(budget) || !Number.isSafeInteger(Math.round(Number(budget) * 100))) {
-      setError("Enter a product keyword and a non-negative budget with up to two decimal places.")
-      return
+  function parseInput(): StructuredSearchInput | null {
+    const volume = numericRange(volumeMin, volumeMax, 1)
+    const price = numericRange(priceMin, priceMax, 100)
+    if (!productName.trim() || !volume || !price) {
+      setError("请填写有效品名、容量范围和最多两位小数的非负港币价格范围。")
+      return null
     }
     taskId.current ??= crypto.randomUUID()
-    const requirement: Requirement = {
-      taskId: taskId.current, requirementVersion: ++version.current,
-      category: "Electronics", query: query.trim(), currency: "HKD",
-      budget: { maxMinor: Math.round(Number(budget) * 100), scope },
-      hardConstraints: [], preferences: [], excludedProductIds, destination: "HK",
+    const keywordGroup = (input: string, must: MustFlag, scope: "all" | "ingredients" = "all") => ({
+      keywords: keywords(input),
+      must,
+      scope,
+    })
+    const searchInput: StructuredSearchInput = {
+      taskId: taskId.current,
+      requirementVersion: ++version.current,
+      useLlm,
+      product_name: { value: productName.trim(), must: 1 },
+      range_conditions: [
+        { field: "volumeMl", ...volume, must: 1 },
+        { field: "priceMinor", ...price, must: 0 },
+      ],
+      include_keywords: [keywordGroup(includeMust, 1), keywordGroup(includePrefer, 0)],
+      exclude_keywords: [
+        keywordGroup(excludeMust, 1, "ingredients"),
+        keywordGroup(excludePrefer, 0, "ingredients"),
+      ],
     }
-    setSnapshot(null)
-    void send("search", { requirement, limit: 20 }, requirement, "search")
-  }
-
-  function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    search()
-  }
-
-  function exclude(candidate: Candidate) {
-    const next = [...new Set([...excluded, candidate.productId])]
-    setExcluded(next)
-    search(next)
-  }
-
-  function verify(candidate: Candidate) {
-    if (!snapshot || snapshot.requirement.requirementVersion !== version.current) return
-    const { requirement, result } = snapshot
-    void send("verify", {
-      requirement, candidates: result.candidates,
-      requests: [{ productId: candidate.productId, skuId: candidate.skuId, offerId: candidate.offerId,
-        fields: verifiableFields(candidate), reason: "Requested missing product details from the homepage." }],
-    }, requirement, keyFor(candidate))
+    if ([...searchInput.include_keywords, ...searchInput.exclude_keywords].some((group) => group.keywords.length === 0)) {
+      setError("每组关键词至少需要填写一个词。")
+      return null
+    }
+    return searchInput
   }
 
   return (
-    <section aria-label="Product search" className="space-y-6">
+    <section aria-label="结构化商品搜索" className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle><h2>Find candidate products</h2></CardTitle>
-            <Badge variant="outline">Mock data</Badge>
+            <CardTitle><h2>结构化商品搜索</h2></CardTitle>
+            <Badge variant="outline">Watsons en_HK 快照</Badge>
           </div>
-          <CardDescription>Explore electronics and fill in missing details. Demo prices and availability are not live.</CardDescription>
+          <CardDescription>硬条件由 TypeScript 筛选；条件满足度由 LLM 评分，未配置模型时使用可见的确定性降级。</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={submit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2 sm:col-span-2">
-                <label htmlFor="search-query" className="text-sm font-medium">Product keywords</label>
-                <Input id="search-query" value={query} required maxLength={200} onChange={(event) => { invalidate(); setQuery(event.target.value) }} />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="search-budget" className="text-sm font-medium">Maximum budget (HKD)</label>
-                <Input id="search-budget" type="number" min="0" step="0.01" value={budget} required
-                  onChange={(event) => { invalidate(); setBudget(event.target.value) }} />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="search-scope" className="text-sm font-medium">Budget covers</label>
-                <select id="search-scope" value={scope} className="h-9 w-full rounded-lg border bg-background px-3 text-sm"
-                  onChange={(event) => { invalidate(); setScope(event.target.value as typeof scope) }}>
-                  <option value="delivered">Item + shipping, after discounts</option>
-                  <option value="item">Item only, after discounts</option>
-                </select>
-              </div>
+          <form onSubmit={submit} className="space-y-5">
+            <Field label="商品品名（must）" value={productName} onChange={setProductName} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <RangeFields label="容量（ml，must）" min={volumeMin} max={volumeMax} setMin={setVolumeMin} setMax={setVolumeMax} />
+              <RangeFields label="价格（HKD，prefer）" min={priceMin} max={priceMax} setMin={setPriceMin} setMax={setPriceMax} step="0.01" />
+              <Field label="必须包含（逗号分隔）" value={includeMust} onChange={setIncludeMust} />
+              <Field label="希望包含（逗号分隔）" value={includePrefer} onChange={setIncludePrefer} />
+              <Field label="成分必须排除（逗号分隔）" value={excludeMust} onChange={setExcludeMust} />
+              <Field label="成分希望排除（逗号分隔）" value={excludePrefer} onChange={setExcludePrefer} />
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <Badge variant="secondary">Electronics</Badge><span>Delivery to Hong Kong</span>
-              {excluded.length > 0 && <span>· {excluded.length} product(s) excluded</span>}
-            </div>
-            <div className="flex flex-wrap gap-3">
-              <Button type="submit" disabled={pending !== null}>{pending === "search" ? "Searching…" : "Search products"}</Button>
-              {excluded.length > 0 && <Button type="button" variant="outline" disabled={pending !== null}
-                onClick={() => { setExcluded([]); search([]) }}>Reset exclusions</Button>}
-            </div>
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={useLlm}
+                onChange={(event) => setUseLlm(event.target.checked)}
+                className="size-4"
+              />
+              <span><span className="font-medium">使用 LLM 评分</span><span className="ml-2 text-muted-foreground">关闭后使用确定性规则，方便对比。</span></span>
+            </label>
+            <Button type="submit" disabled={pending}>{pending ? "搜索与排序中…" : "开始搜索"}</Button>
           </form>
         </CardContent>
       </Card>
 
       {error && <p role="alert" className="rounded-lg border border-destructive/30 p-3 text-sm text-destructive">{error}</p>}
-      <div role="status" aria-live="polite" className="text-sm text-muted-foreground">
-        {pending ? (pending === "search" ? "Searching the demo catalog…" : "Looking up missing facts…") : notice}
-      </div>
-
-      {snapshot && <div aria-busy={pending !== null} className="space-y-4">
+      {result && <div className="space-y-5" aria-live="polite">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="text-lg font-semibold">{snapshot.result.candidates.length} candidate offer{snapshot.result.candidates.length === 1 ? "" : "s"}</h3>
-          <Badge variant={snapshot.result.status === "failed" ? "destructive" : "secondary"}>
-            {snapshot.result.status === "complete" ? "Search complete" : snapshot.result.status === "partial" ? "Partial results" : "Search failed"}
-          </Badge>
+          <p className="font-medium">{result.message}</p>
+          <Badge variant={result.status === "failed" ? "destructive" : "secondary"}>{result.status}</Badge>
         </div>
-        {snapshot.result.warnings.length > 0 && <div role="alert" className="rounded-lg border bg-muted/40 p-3 text-sm">
-          <p className="font-medium">Some information is unavailable</p>
-          <ul className="mt-2 list-inside list-disc break-words">
-            {snapshot.result.warnings.map((warning) => <li key={warning}>{warning}</li>)}
-          </ul>
+        <Card>
+          <CardHeader><CardTitle>筛选日志</CardTitle></CardHeader>
+          <CardContent>
+            <ol className="space-y-2 text-sm">
+              {result.filterLogs.map((log) => <li key={log.conditionId}>{log.message}{log.unknownCount > 0 ? `；${log.unknownCount} 种信息未知` : ""}</li>)}
+            </ol>
+          </CardContent>
+        </Card>
+        {result.debug && <Card>
+          <CardHeader>
+            <CardTitle>LLM 调试日志</CardTitle>
+            <CardDescription>仅限本地开发。显示实际请求体和上游响应，不包含 API Key。</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {result.debug.llmEvents.length === 0
+              ? <p className="text-sm text-muted-foreground">本次搜索没有调用 LLM。</p>
+              : result.debug.llmEvents.map((event, index) => <details key={`${event.productId}:${event.direction}:${index}`} className="rounded-md border p-3">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    {event.productId} · {event.direction}
+                  </summary>
+                  <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">
+                    {formatDebugPayload(event.payload)}
+                  </pre>
+                </details>)}
+          </CardContent>
+        </Card>}
+        {result.warnings.length > 0 && <div role="alert" className="rounded-lg border bg-muted/40 p-3 text-sm">
+          <p className="font-medium">运行提示</p>
+          <ul className="mt-2 list-inside list-disc">{result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
         </div>}
-        {snapshot.result.candidates.length === 0 && snapshot.result.status !== "failed" &&
-          <p className="rounded-xl border border-dashed p-8 text-center text-muted-foreground">No matching products. Try different keywords, a higher budget, or reset exclusions.</p>}
         <div className="grid gap-4 md:grid-cols-2">
-          {snapshot.result.candidates.map((candidate) => {
-            const offer = candidate.offer
-            const price = offer?.itemPriceMinor.value
-            const shipping = offer?.shippingMinor.value
-            const discount = offer?.discountMinor.value
-            const total = price != null && shipping != null && discount != null ? price + shipping - discount : null
-            const fields = verifiableFields(candidate)
-            return <Card key={keyFor(candidate)} role="article" aria-label={candidate.title}>
-              <CardHeader>
-                <CardTitle>{candidate.title}</CardTitle>
-                <CardDescription>{candidate.attributes.color?.value ?? "Color unknown"}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <dl className="grid grid-cols-2 gap-3 text-sm">
-                  <div><dt className="text-muted-foreground">Item price</dt><dd>{money(price, offer?.currency)}</dd></div>
-                  <div><dt className="text-muted-foreground">Shipping</dt><dd>{money(shipping, offer?.currency)}</dd></div>
-                  <div><dt className="text-muted-foreground">Discount</dt><dd>{money(discount, offer?.currency)}</dd></div>
-                  <div><dt className="text-muted-foreground">Delivered total</dt><dd className="font-semibold">{money(total, offer?.currency)}</dd></div>
-                  <div><dt className="text-muted-foreground">Weight</dt><dd>{attribute(candidate.attributes.weightGrams, "g")}</dd></div>
-                  <div><dt className="text-muted-foreground">Battery life</dt><dd>{attribute(candidate.attributes.batteryLifeHours, "hours")}</dd></div>
-                  <div><dt className="text-muted-foreground">Stock</dt><dd>{offer?.stock.value === "available" ? "In stock" : offer?.stock.value === "unavailable" ? "Out of stock" : "Unknown"}</dd></div>
-                  <div><dt className="text-muted-foreground">Delivery</dt><dd>{offer?.deliverable.value === true ? "Available" : offer?.deliverable.value === false ? "Unavailable" : "Unknown"}</dd></div>
-                </dl>
-                {candidate.missingFields.length > 0 && <p className="text-sm text-muted-foreground">
-                  Missing: {candidate.missingFields.map((field) => fieldLabels[field] ?? field).join(", ")}
-                </p>}
-                <div className="flex flex-wrap gap-2">
-                  {fields.length > 0 && <Button type="button" variant="outline" disabled={pending !== null} onClick={() => verify(candidate)}>
-                    {pending === keyFor(candidate) ? "Checking…" : "Look up missing facts"}
-                  </Button>}
-                  <Button type="button" variant="ghost" disabled={pending !== null} onClick={() => exclude(candidate)}>Exclude product</Button>
+          {result.candidates.map((item) => <Card key={`${item.candidate.productId}:${item.candidate.skuId}:${item.candidate.offerId}`}>
+            <CardHeader>
+              <div className="flex items-start justify-between gap-3">
+                <div><CardTitle>#{item.rank} {item.candidate.title}</CardTitle><CardDescription>{item.candidate.category}</CardDescription></div>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {item.llmAverageScore === null
+                    ? <Badge variant="outline">未使用 LLM</Badge>
+                    : <Badge>LLM 均分 {item.llmAverageScore.toFixed(2)} / 5</Badge>}
+                  <span className="text-xs text-muted-foreground">综合排序分 {item.finalScore.toFixed(2)} / 5</span>
                 </div>
-                <details className="text-xs text-muted-foreground">
-                  <summary className="cursor-pointer">Sources and identifiers</summary>
-                  <div className="mt-2 space-y-1 break-all">
-                    <p>Product: {candidate.productId}</p><p>SKU: {candidate.skuId ?? "Unknown"}</p><p>Offer: {candidate.offerId ?? "Unknown"}</p>
-                    {Object.entries(candidate.attributes).map(([field, fact]) => <p key={field}>
-                      {field}: {fact.source || "No source"} · {fact.status} · {fact.fetchedAt || "Not fetched"}
-                    </p>)}
-                    {offer && Object.entries(offer).filter(([field]) => field !== "currency").map(([field, value]) => {
-                      const fact = value as Fact<unknown>
-                      return <p key={field}>{field}: {fact.source || "No source"} · {fact.status} · {fact.fetchedAt || "Not fetched"}</p>
-                    })}
-                  </div>
-                </details>
-              </CardContent>
-            </Card>
-          })}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <dl className="grid grid-cols-2 gap-2">
+                <div><dt className="text-muted-foreground">价格</dt><dd>{money(item.candidate.offer?.itemPriceMinor.value)}</dd></div>
+                <div><dt className="text-muted-foreground">容量</dt><dd>{displayValue(item.candidate.attributes.volumeMl?.value, "ml")}</dd></div>
+                <div><dt className="text-muted-foreground">评分</dt><dd>{displayValue(item.candidate.attributes.rating?.value, "/ 5")}</dd></div>
+                <div><dt className="text-muted-foreground">销量</dt><dd>{displayValue(item.candidate.attributes.salesCount?.value, "")}</dd></div>
+              </dl>
+              {item.needsVerification.length > 0 && <p className="text-amber-700">待后续核验：{item.needsVerification.join("、")}</p>}
+              <details><summary className="cursor-pointer text-muted-foreground">逐条件评分</summary>
+                <ul className="mt-2 space-y-1">{item.conditionScores.map((score) => <li key={score.conditionId}>{score.conditionId}: {score.score}/5 — {score.reason}（{score.source}）</li>)}</ul>
+              </details>
+            </CardContent>
+          </Card>)}
         </div>
       </div>}
     </section>
   )
+}
+
+function Field({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
+  return <label className="space-y-2 text-sm font-medium"><span>{label}</span><Input value={value} onChange={(event) => onChange(event.target.value)} /></label>
+}
+
+function RangeFields({ label, min, max, setMin, setMax, step = "1" }: {
+  label: string; min: string; max: string; setMin: (value: string) => void; setMax: (value: string) => void; step?: string
+}) {
+  return <fieldset className="space-y-2"><legend className="text-sm font-medium">{label}</legend><div className="grid grid-cols-2 gap-2">
+    <Input aria-label={`${label}下限`} type="number" min="0" step={step} value={min} onChange={(event) => setMin(event.target.value)} />
+    <Input aria-label={`${label}上限`} type="number" min="0" step={step} value={max} onChange={(event) => setMax(event.target.value)} />
+  </div></fieldset>
+}
+
+function numericRange(min: string, max: string, multiplier: number): { min: number; max: number } | null {
+  if (!/^\d+(\.\d{1,2})?$/.test(min) || !/^\d+(\.\d{1,2})?$/.test(max)) return null
+  const parsed = { min: Math.round(Number(min) * multiplier), max: Math.round(Number(max) * multiplier) }
+  return Number.isSafeInteger(parsed.min) && Number.isSafeInteger(parsed.max) && parsed.min <= parsed.max ? parsed : null
+}
+
+function keywords(input: string): string[] {
+  return [...new Set(input.split(/[,，]/).map((item) => item.trim()).filter(Boolean))]
+}
+
+function money(input: number | null | undefined): string {
+  return input == null ? "未知" : new Intl.NumberFormat("zh-HK", { style: "currency", currency: "HKD" }).format(input / 100)
+}
+
+function displayValue(input: string | number | boolean | null | undefined, unit: string): string {
+  return input == null ? "未知" : `${String(input)}${unit ? ` ${unit}` : ""}`
+}
+
+function formatDebugPayload(payload: unknown): string {
+  return typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)
 }

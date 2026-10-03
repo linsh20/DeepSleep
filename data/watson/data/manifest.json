@@ -1,0 +1,1224 @@
+{
+  "category": "010200",
+  "category_name": "Face Treatment",
+  "page_size": 32,
+  "language": "en_HK",
+  "currency": "HKD",
+  "source_api": "https://api.watsons.com.hk/api/v2/wtchk/products/search",
+  "started_at": "2026-10-03T12:44:00.680734+00:00",
+  "status": "complete",
+  "pages": {
+    "0": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=0&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:03.302920+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=0&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "fb7cb81ac4c32c2342573ac01dfcd6f580ac11a1d5a2595a924a80bc2d3aeb01",
+      "bytes": 339884
+    },
+    "1": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=1&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:09.721097+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=1&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "e83eddd7ed44d2df69be0459668447f9b97d7f75f48c583d221061f9664177c9",
+      "bytes": 334502
+    },
+    "2": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=2&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:13.528955+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=2&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "7ccdbe7b3987cbe2e5051cc7b372f8e09f0b321604938d26b204664f328d6a3d",
+      "bytes": 332020
+    },
+    "3": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=3&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:17.890102+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=3&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "b7a41ea88498be17b0c43d96e0bc9ab0c4fe7b8a1448c779c4575cd6fefae2a1",
+      "bytes": 326748
+    },
+    "4": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=4&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:21.605919+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=4&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "510d46948e22319e8a353e9d0016d75ed89d7ecc97593b99e6b5d636fd498ce1",
+      "bytes": 330220
+    },
+    "5": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=5&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:38.886343+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=5&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "a877c5a0a8043ede7cf2663ab9a5dce328571ce1b2cd34511ea7de530d423a04",
+      "bytes": 338046
+    },
+    "6": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=6&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:43.595999+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=6&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "9b564f400d40f4ab3928edf23f33015bf53ecbc5e93a1d03cba09f27f89f6cbc",
+      "bytes": 333391
+    },
+    "7": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=7&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:47.565773+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=7&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "338050387a1e848c2aac05c1157b72307e18bc04bb942d9a936ff6a47f8da747",
+      "bytes": 317077
+    },
+    "8": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=8&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:51.285638+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=8&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "80336a0eee07673a765a7807a6c971d5d3bc353bd2f2896eeb0fbb4f4a345475",
+      "bytes": 327863
+    },
+    "9": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=9&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:54.768234+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=9&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "c4415c47025b69cc82bc169d4d5ffdcfd2b2a7b1bc3ee03ed3a38f7244b0b111",
+      "bytes": 316394
+    },
+    "10": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=10&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:44:59.494928+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=10&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "2106c5636a83b969bcb2f7e5ac7fc9a90756ecfd1faaa8854f2c8d12861a5180",
+      "bytes": 329119
+    },
+    "11": {
+      "status": 200,
+      "content_type": "application/json;charset=UTF-8",
+      "etag": null,
+      "last_modified": null,
+      "final_url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=11&pageSize=32&lang=en_HK&curr=HKD",
+      "fetched_at": "2026-10-03T12:45:05.111882+00:00",
+      "url": "https://api.watsons.com.hk/api/v2/wtchk/products/search?fields=FULL&query=%3AbestSeller%3Acategory%3A010200&currentPage=11&pageSize=32&lang=en_HK&curr=HKD",
+      "sha256": "b9ba8229981f9d7de73006aedf8866673e3561d47dddcd7fc82a4f740f67538d",
+      "bytes": 156094
+    }
+  },
+  "exported_at": "2026-10-03T12:45:06.192967+00:00",
+  "reported_total": 355,
+  "received_records": 355,
+  "unique_products": 355,
+  "duplicate_occurrences": 0,
+  "confirmed_category_products": 349,
+  "category_status_counts": {
+    "confirmed_face_treatment": 349,
+    "review_category_mismatch_or_missing": 4,
+    "generic_skincare_in_face_treatment_feed": 2
+  },
+  "top_level_field_count": 94,
+  "product_source_pages": {
+    "BP_823759": [
+      0
+    ],
+    "BP_816967": [
+      0
+    ],
+    "BP_819058": [
+      0
+    ],
+    "BP_819074": [
+      0
+    ],
+    "BP_819890": [
+      0
+    ],
+    "BP_819062": [
+      0
+    ],
+    "BP_819891": [
+      0
+    ],
+    "BP_823491": [
+      0
+    ],
+    "BP_819072": [
+      0
+    ],
+    "BP_816965": [
+      0
+    ],
+    "BP_823492": [
+      0
+    ],
+    "BP_819061": [
+      0
+    ],
+    "BP_819904": [
+      0
+    ],
+    "BP_823401": [
+      0
+    ],
+    "BP_823490": [
+      0
+    ],
+    "BP_817426": [
+      0
+    ],
+    "BP_809692": [
+      0
+    ],
+    "BP_825598": [
+      0
+    ],
+    "BP_825676": [
+      0
+    ],
+    "BP_816971": [
+      0
+    ],
+    "BP_816272": [
+      0
+    ],
+    "BP_810843": [
+      0
+    ],
+    "BP_820094": [
+      0
+    ],
+    "BP_816973": [
+      0
+    ],
+    "BP_816974": [
+      0
+    ],
+    "BP_816969": [
+      0
+    ],
+    "BP_823438": [
+      0
+    ],
+    "BP_813733": [
+      0
+    ],
+    "BP_823442": [
+      0
+    ],
+    "BP_813750": [
+      0
+    ],
+    "BP_823460": [
+      0
+    ],
+    "BP_813749": [
+      0
+    ],
+    "BP_820035": [
+      1
+    ],
+    "BP_820030": [
+      1
+    ],
+    "BP_823550": [
+      1
+    ],
+    "BP_823547": [
+      1
+    ],
+    "BP_823544": [
+      1
+    ],
+    "BP_823552": [
+      1
+    ],
+    "BP_823549": [
+      1
+    ],
+    "BP_823548": [
+      1
+    ],
+    "BP_821029": [
+      1
+    ],
+    "BP_823859": [
+      1
+    ],
+    "BP_822645": [
+      1
+    ],
+    "BP_822624": [
+      1
+    ],
+    "BP_821026": [
+      1
+    ],
+    "BP_244332": [
+      1
+    ],
+    "BP_824908": [
+      1
+    ],
+    "BP_802622": [
+      1
+    ],
+    "BP_281719": [
+      1
+    ],
+    "BP_817052": [
+      1
+    ],
+    "BP_819881": [
+      1
+    ],
+    "BP_818277": [
+      1
+    ],
+    "BP_233840": [
+      1
+    ],
+    "BP_821315": [
+      1
+    ],
+    "BP_824754": [
+      1
+    ],
+    "BP_817050": [
+      1
+    ],
+    "BP_810840": [
+      1
+    ],
+    "BP_816129": [
+      1
+    ],
+    "BP_810988": [
+      1
+    ],
+    "BP_809622": [
+      1
+    ],
+    "BP_245862": [
+      1
+    ],
+    "BP_806745": [
+      1
+    ],
+    "BP_819882": [
+      1
+    ],
+    "BP_821384": [
+      1
+    ],
+    "BP_821385": [
+      2
+    ],
+    "BP_824914": [
+      2
+    ],
+    "BP_824059": [
+      2
+    ],
+    "BP_809609": [
+      2
+    ],
+    "BP_821027": [
+      2
+    ],
+    "BP_822167": [
+      2
+    ],
+    "BP_819682": [
+      2
+    ],
+    "BP_805849": [
+      2
+    ],
+    "BP_824624": [
+      2
+    ],
+    "BP_809781": [
+      2
+    ],
+    "BP_822735": [
+      2
+    ],
+    "BP_816880": [
+      2
+    ],
+    "BP_823942": [
+      2
+    ],
+    "BP_817398": [
+      2
+    ],
+    "BP_822981": [
+      2
+    ],
+    "BP_817049": [
+      2
+    ],
+    "BP_281721": [
+      2
+    ],
+    "BP_819700": [
+      2
+    ],
+    "BP_805851": [
+      2
+    ],
+    "BP_241376": [
+      2
+    ],
+    "BP_824627": [
+      2
+    ],
+    "BP_809611": [
+      2
+    ],
+    "BP_821377": [
+      2
+    ],
+    "BP_288092": [
+      2
+    ],
+    "BP_825567": [
+      2
+    ],
+    "BP_812582": [
+      2
+    ],
+    "BP_294598": [
+      2
+    ],
+    "BP_824613": [
+      2
+    ],
+    "BP_819604": [
+      2
+    ],
+    "BP_259265": [
+      2
+    ],
+    "BP_823944": [
+      2
+    ],
+    "BP_825990": [
+      2
+    ],
+    "BP_817324": [
+      3
+    ],
+    "BP_805351": [
+      3
+    ],
+    "BP_801908": [
+      3
+    ],
+    "BP_821337": [
+      3
+    ],
+    "BP_821087": [
+      3
+    ],
+    "BP_821031": [
+      3
+    ],
+    "BP_241382": [
+      3
+    ],
+    "BP_807964": [
+      3
+    ],
+    "BP_255583": [
+      3
+    ],
+    "BP_820617": [
+      3
+    ],
+    "BP_819683": [
+      3
+    ],
+    "BP_817397": [
+      3
+    ],
+    "BP_815924": [
+      3
+    ],
+    "BP_807959": [
+      3
+    ],
+    "BP_825887": [
+      3
+    ],
+    "BP_816104": [
+      3
+    ],
+    "BP_816546": [
+      3
+    ],
+    "BP_235898": [
+      3
+    ],
+    "BP_824996": [
+      3
+    ],
+    "BP_822642": [
+      3
+    ],
+    "BP_237715": [
+      3
+    ],
+    "BP_821538": [
+      3
+    ],
+    "BP_823653": [
+      3
+    ],
+    "BP_290329": [
+      3
+    ],
+    "BP_262688": [
+      3
+    ],
+    "BP_825334": [
+      3
+    ],
+    "BP_824614": [
+      3
+    ],
+    "BP_822814": [
+      3
+    ],
+    "BP_822646": [
+      3
+    ],
+    "BP_822626": [
+      3
+    ],
+    "BP_807699": [
+      3
+    ],
+    "BP_803494": [
+      3
+    ],
+    "BP_822627": [
+      4
+    ],
+    "BP_821672": [
+      4
+    ],
+    "BP_817323": [
+      4
+    ],
+    "BP_809613": [
+      4
+    ],
+    "BP_805852": [
+      4
+    ],
+    "BP_266407": [
+      4
+    ],
+    "BP_823655": [
+      4
+    ],
+    "BP_822030": [
+      4
+    ],
+    "BP_809790": [
+      4
+    ],
+    "BP_801352": [
+      4
+    ],
+    "BP_228560": [
+      4
+    ],
+    "BP_825335": [
+      4
+    ],
+    "BP_809608": [
+      4
+    ],
+    "BP_809612": [
+      4
+    ],
+    "BP_824113": [
+      4
+    ],
+    "BP_819820": [
+      4
+    ],
+    "BP_816549": [
+      4
+    ],
+    "BP_813768": [
+      4
+    ],
+    "BP_259257": [
+      4
+    ],
+    "BP_824114": [
+      4
+    ],
+    "BP_823571": [
+      4
+    ],
+    "BP_820590": [
+      4
+    ],
+    "BP_814392": [
+      4
+    ],
+    "BP_803127": [
+      4
+    ],
+    "BP_156996": [
+      4
+    ],
+    "BP_821033": [
+      4
+    ],
+    "BP_821008": [
+      4
+    ],
+    "BP_815989": [
+      4
+    ],
+    "BP_809257": [
+      4
+    ],
+    "BP_241377": [
+      4
+    ],
+    "BP_824645": [
+      4
+    ],
+    "BP_806747": [
+      4
+    ],
+    "BP_242764": [
+      5
+    ],
+    "BP_256907": [
+      5
+    ],
+    "BP_262664": [
+      5
+    ],
+    "BP_825331": [
+      5
+    ],
+    "BP_824536": [
+      5
+    ],
+    "BP_818131": [
+      5
+    ],
+    "BP_817567": [
+      5
+    ],
+    "BP_235893": [
+      5
+    ],
+    "BP_819884": [
+      5
+    ],
+    "BP_818425": [
+      5
+    ],
+    "BP_817509": [
+      5
+    ],
+    "BP_803399": [
+      5
+    ],
+    "BP_826227": [
+      5
+    ],
+    "BP_824997": [
+      5
+    ],
+    "BP_824541": [
+      5
+    ],
+    "BP_823573": [
+      5
+    ],
+    "BP_822621": [
+      5
+    ],
+    "BP_820095": [
+      5
+    ],
+    "BP_815991": [
+      5
+    ],
+    "BP_814708": [
+      5
+    ],
+    "BP_238489": [
+      5
+    ],
+    "BP_158929": [
+      5
+    ],
+    "BP_131487": [
+      5
+    ],
+    "BP_826223": [
+      5
+    ],
+    "BP_824851": [
+      5
+    ],
+    "BP_823779": [
+      5
+    ],
+    "BP_823657": [
+      5
+    ],
+    "BP_821009": [
+      5
+    ],
+    "BP_818132": [
+      5
+    ],
+    "BP_806888": [
+      5
+    ],
+    "BP_803250": [
+      5
+    ],
+    "BP_288085": [
+      5
+    ],
+    "BP_241381": [
+      6
+    ],
+    "BP_287845": [
+      6
+    ],
+    "BP_239677": [
+      6
+    ],
+    "BP_826226": [
+      6
+    ],
+    "BP_824465": [
+      6
+    ],
+    "BP_822812": [
+      6
+    ],
+    "BP_822648": [
+      6
+    ],
+    "BP_822622": [
+      6
+    ],
+    "BP_821024": [
+      6
+    ],
+    "BP_820314": [
+      6
+    ],
+    "BP_817065": [
+      6
+    ],
+    "BP_815990": [
+      6
+    ],
+    "BP_815996": [
+      6
+    ],
+    "BP_809259": [
+      6
+    ],
+    "BP_802084": [
+      6
+    ],
+    "BP_267008": [
+      6
+    ],
+    "BP_235677": [
+      6
+    ],
+    "BP_826208": [
+      6
+    ],
+    "BP_825621": [
+      6
+    ],
+    "BP_824958": [
+      6
+    ],
+    "BP_823858": [
+      6
+    ],
+    "BP_823603": [
+      6
+    ],
+    "BP_821755": [
+      6
+    ],
+    "BP_820281": [
+      6
+    ],
+    "BP_239898": [
+      6
+    ],
+    "BP_805991": [
+      6
+    ],
+    "BP_804775": [
+      6
+    ],
+    "BP_156995": [
+      6
+    ],
+    "BP_293379": [
+      6
+    ],
+    "BP_825467": [
+      6
+    ],
+    "BP_824957": [
+      6
+    ],
+    "BP_824542": [
+      6
+    ],
+    "BP_823789": [
+      7
+    ],
+    "BP_819740": [
+      7
+    ],
+    "BP_809785": [
+      7
+    ],
+    "BP_809783": [
+      7
+    ],
+    "BP_806046": [
+      7
+    ],
+    "BP_806231": [
+      7
+    ],
+    "BP_802080": [
+      7
+    ],
+    "BP_235676": [
+      7
+    ],
+    "BP_825984": [
+      7
+    ],
+    "BP_825332": [
+      7
+    ],
+    "BP_824049": [
+      7
+    ],
+    "BP_249539": [
+      7
+    ],
+    "BP_822276": [
+      7
+    ],
+    "BP_812526": [
+      7
+    ],
+    "BP_805983": [
+      7
+    ],
+    "BP_239660": [
+      7
+    ],
+    "BP_825624": [
+      7
+    ],
+    "BP_824537": [
+      7
+    ],
+    "BP_824279": [
+      7
+    ],
+    "BP_824208": [
+      7
+    ],
+    "BP_823782": [
+      7
+    ],
+    "BP_823682": [
+      7
+    ],
+    "BP_823010": [
+      7
+    ],
+    "BP_822649": [
+      7
+    ],
+    "BP_817940": [
+      7
+    ],
+    "BP_817594": [
+      7
+    ],
+    "BP_810841": [
+      7
+    ],
+    "BP_269352": [
+      7
+    ],
+    "BP_809407": [
+      7
+    ],
+    "BP_804772": [
+      7
+    ],
+    "BP_293378": [
+      7
+    ],
+    "BP_293375": [
+      7
+    ],
+    "BP_293377": [
+      8
+    ],
+    "BP_270960": [
+      8
+    ],
+    "BP_253226": [
+      8
+    ],
+    "BP_826225": [
+      8
+    ],
+    "BP_825623": [
+      8
+    ],
+    "BP_825376": [
+      8
+    ],
+    "BP_825330": [
+      8
+    ],
+    "BP_820591": [
+      8
+    ],
+    "BP_820278": [
+      8
+    ],
+    "BP_819610": [
+      8
+    ],
+    "BP_818414": [
+      8
+    ],
+    "BP_817064": [
+      8
+    ],
+    "BP_816018": [
+      8
+    ],
+    "BP_123519": [
+      8
+    ],
+    "BP_280407": [
+      8
+    ],
+    "BP_809784": [
+      8
+    ],
+    "BP_241385": [
+      8
+    ],
+    "BP_239646": [
+      8
+    ],
+    "BP_256026": [
+      8
+    ],
+    "BP_826618": [
+      8
+    ],
+    "BP_825625": [
+      8
+    ],
+    "BP_825622": [
+      8
+    ],
+    "BP_824538": [
+      8
+    ],
+    "BP_823011": [
+      8
+    ],
+    "BP_821759": [
+      8
+    ],
+    "BP_820354": [
+      8
+    ],
+    "BP_819807": [
+      8
+    ],
+    "BP_819806": [
+      8
+    ],
+    "BP_819248": [
+      8
+    ],
+    "BP_818869": [
+      8
+    ],
+    "BP_818411": [
+      8
+    ],
+    "BP_817804": [
+      8
+    ],
+    "BP_816318": [
+      9
+    ],
+    "BP_816228": [
+      9
+    ],
+    "BP_123516": [
+      9
+    ],
+    "BP_123517": [
+      9
+    ],
+    "BP_123521": [
+      9
+    ],
+    "BP_814998": [
+      9
+    ],
+    "BP_814996": [
+      9
+    ],
+    "BP_289247": [
+      9
+    ],
+    "BP_289241": [
+      9
+    ],
+    "BP_289235": [
+      9
+    ],
+    "BP_814395": [
+      9
+    ],
+    "BP_812991": [
+      9
+    ],
+    "BP_812989": [
+      9
+    ],
+    "BP_812986": [
+      9
+    ],
+    "BP_269681": [
+      9
+    ],
+    "BP_239895": [
+      9
+    ],
+    "BP_280406": [
+      9
+    ],
+    "BP_807351": [
+      9
+    ],
+    "BP_809408": [
+      9
+    ],
+    "BP_805990": [
+      9
+    ],
+    "BP_805993": [
+      9
+    ],
+    "BP_805985": [
+      9
+    ],
+    "BP_802089": [
+      9
+    ],
+    "BP_802083": [
+      9
+    ],
+    "BP_256027": [
+      9
+    ],
+    "BP_256022": [
+      9
+    ],
+    "BP_255832": [
+      9
+    ],
+    "BP_817377": [
+      9
+    ],
+    "BP_823400": [
+      9
+    ],
+    "BP_809186": [
+      9
+    ],
+    "BP_816970": [
+      9
+    ],
+    "BP_816274": [
+      9
+    ],
+    "BP_813765": [
+      10
+    ],
+    "BP_816264": [
+      10
+    ],
+    "BP_823790": [
+      10
+    ],
+    "BP_823009": [
+      10
+    ],
+    "BP_817422": [
+      10
+    ],
+    "BP_816265": [
+      10
+    ],
+    "BP_823940": [
+      10
+    ],
+    "BP_819662": [
+      10
+    ],
+    "BP_810989": [
+      10
+    ],
+    "BP_821378": [
+      10
+    ],
+    "BP_823945": [
+      10
+    ],
+    "BP_822625": [
+      10
+    ],
+    "BP_821030": [
+      10
+    ],
+    "BP_823658": [
+      10
+    ],
+    "BP_817088": [
+      10
+    ],
+    "BP_824207": [
+      10
+    ],
+    "BP_269895": [
+      10
+    ],
+    "BP_823753": [
+      10
+    ],
+    "BP_803402": [
+      10
+    ],
+    "BP_119795": [
+      10
+    ],
+    "BP_819684": [
+      10
+    ],
+    "BP_297632": [
+      10
+    ],
+    "BP_269351": [
+      10
+    ],
+    "BP_817589": [
+      10
+    ],
+    "BP_809792": [
+      10
+    ],
+    "BP_820283": [
+      10
+    ],
+    "BP_289257": [
+      10
+    ],
+    "BP_823654": [
+      10
+    ],
+    "BP_823652": [
+      10
+    ],
+    "BP_823646": [
+      10
+    ],
+    "BP_807737": [
+      10
+    ],
+    "BP_119804": [
+      10
+    ],
+    "BP_821386": [
+      11
+    ],
+    "BP_817450": [
+      11
+    ],
+    "BP_270330": [
+      11
+    ]
+  },
+  "note": "All products returned by category 010200 are kept. No fixed 351 count. Duplicate occurrences remain in raw page responses."
+}

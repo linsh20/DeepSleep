@@ -1,223 +1,147 @@
-# DeepSleep · WalletAgent
+# DeepSleep
 
-一个使用 Next.js 和 TypeScript 开发的购物 Agent 原型。项目将搜索与商品事实交给 Agent A，将候选评估、约束判断和购买前风控交给 Agent B，并提供主 Agent 可调用的 A/B 编排入口。
+DeepSleep 当前实现一条统一的商品搜索管线，不再区分 Agent A 和 Agent B。模块接收上层已经解析好的结构化条件，执行确定性筛选、评分/销量预选、LLM 条件评分，并将最多十个有序候选交给后续授权验证。
 
-当前使用本地 Mock 商品数据，不需要 LLM API Key、数据库、Python 或 Docker。首页已经接入 Agent A 的搜索与事实补查；Agent B 和 A/B 编排已在服务端实现，但推荐结果与购买风控尚未接入页面，也没有真实下单模块。
+默认数据源已经切换为 `data/watson/data/products.db` 中的 Watsons 香港 `en_HK` 快照。搜索模块不会授权购买、模拟真实交易或调用商城下单接口；快照价格、库存和促销必须由后续授权验证实时复核。
 
 ## 当前能力
 
-| 模块 | 已实现 | 当前限制 |
-| --- | --- | --- |
-| Agent A | 搜索计划、候选召回、标准化、去重、排除、事实补查 | 使用 Mock 数据，未连接真实商城 |
-| Agent B | 硬约束过滤、偏好评分、推荐解释、补查请求、购买前检查 | Mock 事实不能当作已核验事实；没有授权数据库 |
-| A/B 编排 | 搜索 → 评估 → 最多 2 轮补查 → 重新评估 | `needsSearch` 交回主 Agent，不会自动放宽需求 |
-| Web 首页 | 搜索候选、查看事实、补查字段、排除商品 | 暂未展示 B 的推荐与风控结果 |
-| 购买 | 只提供 `checkPurchase` 风控接口 | 不执行真实交易 |
+- 品名、数值范围、包含关键词、排除关键词四阶段顺序筛选。
+- 每个条件输出筛选前后数量和未知事实数量。
+- `must` 只淘汰已知违反；未知值保留并标记待验证；`prefer` 只参与排序。
+- 超过十个候选时按评分 60%、销量 40% 预选。
+- LLM 对每个条件给出 1–5 分，未知事实由代码强制为 3。
+- 可按单次请求关闭 LLM 并与确定性评分对比；商品卡片单独显示 LLM 算术平均分。
+- 采用对低分敏感的加权调和平均，`must` 权重 2、`prefer` 权重 1。
+- 单商品 LLM 失败时确定性降级，不影响其他商品。
+- 保留来源、获取时间、事实状态、精确商品身份、任务 ID 和需求版本。
+- 支持英文品名别名和成分字段限定；通用 `alcohol` 不会误判 cetyl/cetearyl alcohol，`fragrance` 可识别 `parfum`。
+- 只召回 349 条 `confirmed_face_treatment` 记录；6 条类目异常仍保留在原始数据中，但不参与搜索。
+- 成功搜索但零匹配返回 `complete/no_match`，与数据源故障明确区分。
 
-统一字段及接口约定见 [A/B 接入文档](docs/agent-integration.md)。重量统一使用 `weightGrams`，金额使用整数最小货币单位，商品身份分别保存 `productId`、`skuId` 和 `offerId`。
+## 本地运行
 
-## 本地运行需要的环境
+要求 Node.js 22.13+（SQLite 使用 Node 内置 `node:sqlite`）：
 
-推荐在 Windows 10/11 上准备：
-
-- [Git for Windows](https://git-scm.com/download/win)：用于拉取和更新代码；如果代码已经在本地，仅运行项目时不是必需项。
-- [Node.js](https://nodejs.org/) **22.18 或更高版本**：官方安装包会同时安装 `npm`。Node.js 24 也已验证可用。
-- 一个现代浏览器，例如 Chrome、Edge 或 Firefox。
-
-Next.js 16 本身要求 Node.js 20.9 或更高版本；本项目测试脚本还会直接运行 TypeScript 测试文件，因此统一推荐 Node.js 22.18 或更高版本。
-
-不需要安装：
-
-- Python
-- Docker
-- 数据库
-- 全局 Next.js
-- LLM 或商城 API Key
-
-## Windows 安装与启动
-
-### 1. 安装并检查 Node.js
-
-从 [Node.js 官网](https://nodejs.org/) 安装符合版本要求的版本。安装完成后关闭并重新打开 PowerShell，然后执行：
-
-```powershell
-node --version
-npm --version
-```
-
-两条命令都应显示版本号。
-
-如果出现“无法将 `npm` 项识别为 cmdlet”，说明当前 PowerShell 没有找到正式安装的 Node.js。请安装或重新安装 Node.js，并重开终端；可用以下命令检查实际路径：
-
-```powershell
-where.exe node
-where.exe npm
-```
-
-如果 PowerShell 的执行策略阻止 `npm.ps1`，可以直接使用同一安装目录下的 `npm.cmd`：
-
-```powershell
-npm.cmd --version
-```
-
-### 2. 进入并更新项目
-
-如果已经有当前项目文件夹：
-
-```powershell
-cd C:\Users\13661\Desktop\HackU_codes\DeepSleep
-git switch main
-git pull --ff-only origin main
-```
-
-第一次获取项目时：
-
-```powershell
-cd C:\Users\13661\Desktop\HackU_codes
-git clone git@github.com:linsh20/DeepSleep.git
-cd DeepSleep
-```
-
-SSH 克隆需要 GitHub SSH 权限；没有配置 SSH 时，也可以使用仓库页面提供的 HTTPS 地址。
-
-### 3. 安装依赖并启动开发服务器
-
-```powershell
-npm ci
+```sh
+npm install
 npm run dev
 ```
 
-打开 [http://localhost:3000](http://localhost:3000)。终端显示 `Ready` 后即可使用；按 `Ctrl+C` 停止服务。
+打开 `http://localhost:3000`。默认表单使用英文关键词搜索 HKD 100–300、100–300 ml 的 lotion，并展示筛选日志和逐条件评分。
 
-如果默认端口被占用，可指定其他端口：
+## 结构化输入
 
-```powershell
-npm run dev -- --port 3001
+```json
+{
+  "taskId": "task-001",
+  "requirementVersion": 1,
+  "useLlm": true,
+  "product_name": {
+    "value": "lotion",
+    "aliases": ["emulsion", "moisturising lotion"],
+    "must": 1
+  },
+  "range_conditions": [
+    { "field": "volumeMl", "min": 100, "max": 300, "must": 1 },
+    { "field": "priceMinor", "min": 10000, "max": 30000, "must": 0 }
+  ],
+  "include_keywords": [
+    { "keywords": ["sensitive skin"], "must": 1 },
+    { "keywords": ["moisturizing", "moisturising"], "must": 0 }
+  ],
+  "exclude_keywords": [
+    { "keywords": ["alcohol", "ethanol"], "scope": "ingredients", "must": 1 },
+    { "keywords": ["fragrance", "parfum"], "scope": "ingredients", "must": 0 }
+  ]
+}
 ```
 
-如果使用 `npm.cmd` 规避 PowerShell 脚本策略，对应命令为：
+金额统一使用整数最小货币单位：HKD 100 表示为 `10000`。容量使用 `volumeMl`。`useLlm` 可选且默认为 `true`；设为 `false` 时本次请求完全跳过 LLM 并使用确定性评分。`aliases` 和 `scope` 均为可选字段；`scope` 默认为 `all`，成分排除建议明确使用 `ingredients`。未知商品事实使用 `null`，不能用零或空字符串代替。
 
-```powershell
-npm.cmd ci
-npm.cmd run dev
+当前快照是 `en_HK`，所以上游应把中文意图转换为英文 `value`/`aliases`；展示和说明仍可使用中文。品牌名和 INCI 成分保留源数据原文，不做简繁或机器翻译。这样可以避开简繁转换和中文分词歧义，同时保留成分标准名称。
+
+HTTP 入口：
+
+| 入口 | 请求 | 返回 |
+| --- | --- | --- |
+| `POST /api/products/search` | `StructuredSearchInput` | `RankedSearchResult` |
+
+详细字段、状态、算法和边界见 [统一搜索管线文档](docs/search-pipeline.md)。
+
+## LLM 配置
+
+不配置 LLM 时系统仍可用，但会使用确定性评分并返回 `partial`：
+
+```text
+LLM_API_URL=https://provider.example/v1/chat/completions
+LLM_API_KEY=...
+LLM_MODEL=...
+LLM_TIMEOUT_MS=30000
+LLM_LOG_PAYLOADS=1
+LLM_DEBUG_UI=1
 ```
 
-`npm ci` 会严格按 `package-lock.json` 安装依赖，首次运行、依赖变化或 `node_modules` 不完整时都应执行。
+接口采用 OpenAI-compatible chat-completion JSON 格式。配置和调用只存在于服务端，禁止使用 `NEXT_PUBLIC_` 暴露密钥。
+`LLM_API_URL` 必须是完整的 Chat Completions 地址，例如以 `/v1/chat/completions` 结尾。`LLM_TIMEOUT_MS` 可选，默认 30000 毫秒。
+发送给模型的候选数据包含分类 `category_name`、全部非空文本、属性和报价字段；`null`、空字符串、空对象和空数组不会发送。模型只返回 `{ "scores": { "conditionId": 1..5 } }`，原因和证据不由模型生成。
 
-## 测试与生产构建
+开发服务会输出 `[llm-score]` 结构化日志，仅包含成功/失败、商品 ID、耗时、条件数和安全错误代码；不会记录密钥、提示词、商品正文或模型理由。
+本地调试时可设置 `LLM_LOG_PAYLOADS=1`，服务端终端会额外输出完整的 `[llm-score:request]` 与 `[llm-score:response]`。此开关在生产环境中强制关闭，且日志始终不包含 API Key；因为其中包含商品正文和模型理由，排查完成后应删除或改为 `0`。
+设置 `LLM_DEBUG_UI=1` 并重启开发服务后，搜索页面会出现“LLM 调试日志”，按商品展示实际发送的请求体、原始响应和安全错误代码。该开关只在非生产环境生效，响应不会包含 API Key；调试载荷仍可能包含商品正文和模型理由，排查完成后应关闭。
 
-运行全部 Agent A、Agent B、HTTP 接口和跨模块联调测试：
+本地验证：在 `.env.local` 配置上述 LLM 变量和 `LLM_DEBUG_UI=1`，运行 `npm run dev`，打开 `http://localhost:3000` 并提交一次搜索，然后展开页面中的“LLM 调试日志”。修改 `.env.local` 后需要重启开发服务。
 
-```powershell
+## 商品数据配置
+
+默认读取仓库内 Watsons 快照；需要切换测试数据或另一个数据库时使用服务端环境变量：
+
+```text
+PRODUCT_DATA_MODE=mock
+WATSONS_DB_PATH=D:\snapshots\watsons\products.db
+```
+
+`PRODUCT_DATA_MODE=mock` 才会使用 `data/products.mock.json`。未设置时使用 Watsons。数据库必须包含本项目抓取器生成的 `products`、`snapshot` 表，且快照元数据必须是 `complete`、`en_HK`、`HKD`。构建配置会把默认数据库加入 `/api/products/search` 的服务端文件追踪。
+
+## 模块结构
+
+| 路径 | 用途 |
+| --- | --- |
+| `types/index.ts` | 唯一共享类型来源 |
+| `services/product-search.ts` | 统一搜索编排、校验、归一化和最终排序 |
+| `services/search-filter.ts` | 四阶段确定性筛选和日志 |
+| `services/popularity-ranker.ts` | 评分/销量预选 |
+| `services/condition-scorer.ts` | LLM 适配、输出校验和确定性降级 |
+| `services/product-provider.ts` | 商品数据源抽象和 Mock Provider |
+| `services/watsons-product-provider.ts` | Watsons SQLite 读取、清洗和字段归一化 |
+| `data/products.mock.json` | 乳液 Mock 商品数据 |
+| `data/watson/data/products.db` | 默认 Watsons `en_HK` 搜索快照 |
+| `app/api/products/search/route.ts` | Next.js Route Handler |
+| `components/product-search.tsx` | 首页演示界面 |
+
+下游必须校验返回结果的 `taskId` 和 `requirementVersion`，默认从 `candidates[0]` 开始授权验证，不满足时按 rank 递补。推荐顺序不是购买授权。
+
+Agent A 与契约版 Agent B 的服务端联调入口为 `services/shopping-agent.ts`，字段映射、补查边界和 Watsons 数据限制见 [A/B 联调文档](docs/agent-b-shopping-integration.md)。
+
+## 验证
+
+```sh
 npm test
-```
-
-其他常用检查：
-
-```powershell
 npm run lint
 npx tsc --noEmit
 npm run build
 ```
 
-本地运行生产构建：
+测试覆盖正常、空结果、非法输入、部分失败、总失败、超时、去重、硬筛/偏好、缺失事实、评分/销量预选、未知 3 分、LLM 单商品降级、调和平均、任务版本、HTTP 错误映射、真实 SQLite 映射、类目过滤、容量冲突以及酒精/香精语义。
 
-```powershell
-npm run build
-npm run start
-```
+### 手工验证
 
-当前完整测试集共 39 个测试。页面使用 `next/font/google`，首次开发或生产构建可能需要访问 Google Fonts；Mock 商品搜索本身不需要外部网络。
+1. 运行 `npm run dev`，打开首页；页头应显示“Watsons en_HK 快照”。
+2. 保留默认 `lotion` 条件提交；结果商品 ID 应以 `watsons-product:` 开头，链接指向 `www.watsons.com.hk`。
+3. 把品名改为明显不存在的英文词，应得到“没有符合当前条件的商品”，而不是数据源错误。
+4. 用 `PRODUCT_DATA_MODE=mock npm run dev`（PowerShell：`$env:PRODUCT_DATA_MODE="mock"; npm run dev`）可验证 Mock 降级路径。
+5. 动态事实只代表 `2026-10-03` 快照；进入购买授权步骤前必须重新检查价格、库存、配送和促销资格。
 
-## 首页操作示例
+## 开发约定
 
-1. 保持默认关键词 `Wireless headphones`、预算 HK$500、包含运费，点击 **Search products**。
-2. 对缺少重量或续航的候选点击 **Look up missing facts**。
-3. 点击 **Exclude product** 可排除同一 `productId` 的全部 SKU 和报价。
-4. 点击 **Reset exclusions** 恢复被排除的商品。
-5. 展开 **Sources and identifiers** 查看来源、获取时间和商品身份。
-
-页面底部的 **Legacy purchase demo** 是独立模拟流程，没有与候选列表联动，也不会执行真实交易。
-
-## A/B 调用链路
-
-```text
-Requirement
-    ↓
-Agent A: searchCandidates
-    ↓
-Agent B: evaluateCandidates
-    ├─ ready ───────────────→ 返回推荐
-    ├─ needsSearch ─────────→ 返回 searchHints 给主 Agent
-    └─ needsVerification ───→ Agent A: verifyFacts
-                                  ↓
-                              Agent B 重新评估
-```
-
-服务端主 Agent 可以直接调用：
-
-```ts
-import { checkPurchase, runShoppingTask } from "@/services/shopping-agent"
-
-const result = await runShoppingTask({ requirement, limit: 20 })
-
-const purchaseCheck = await checkPurchase(
-  { requirement, candidate, quantity: 1, authorization },
-  {
-    getAuthorizationById: (authorizationId) =>
-      authorizationStore.findById(authorizationId),
-  },
-)
-```
-
-`runShoppingTask` 默认最多补查 2 轮，并保留部分搜索结果。`checkPurchase` 只进行购买前检查；授权必须来自后端保存的真实记录，缺少价格、运费、库存、配送信息或授权时不会返回 `approved`。
-
-Agent A 的 HTTP 入口：
-
-| 入口 | 请求体 | 返回 |
-| --- | --- | --- |
-| `POST /api/products/search` | `{ requirement, limit }` | `SearchResult` |
-| `POST /api/products/verify` | `{ requirement, candidates, requests }` | `SearchResult` |
-
-接口详细说明见 [Agent A 文档](docs/search-agent.md) 和 [A/B 接入文档](docs/agent-integration.md)。
-
-## 数据与运行时约定
-
-- 公共类型唯一来源是 [types/index.ts](types/index.ts)；[types/shopping.ts](types/shopping.ts) 为兼容现有导入路径而重导出。
-- 重量统一使用 `attributes.weightGrams`，单位为克。
-- 续航使用 `attributes.batteryLifeHours`，单位为小时。
-- 金额使用整数最小货币单位，例如 HK$500 表示为 `50000`。
-- 缺失事实使用 `null` 或缺失字段，不能用 `0` 代替。
-- 每次需求修改应递增 `requirementVersion`，旧版本结果不能覆盖新版本。
-- 商品事实包含来源、获取时间和状态；`mock` 不等于经过真实来源核验。
-- 搜索、评估和风控接口都不会直接下单。
-
-Mock 数据位于 [data/products.mock.json](data/products.mock.json)，包含预算、运费、折扣、缺货、无法配送、未知字段、多 SKU、多报价和重复数据等测试场景。演示网址使用 `example.invalid`，不能用于真实购买。
-
-## 主要目录
-
-| 路径 | 用途 |
-| --- | --- |
-| [types/index.ts](types/index.ts) | A/B 共用类型 |
-| [services/search-agent.ts](services/search-agent.ts) | Agent A 搜索与事实补查 |
-| [services/product-provider.ts](services/product-provider.ts) | 商品数据源抽象和 Mock Provider |
-| [lib/agent-b/index.ts](lib/agent-b/index.ts) | Agent B 评估和购买前风控 |
-| [services/shopping-agent.ts](services/shopping-agent.ts) | 主 Agent 可调用的 A/B 编排入口 |
-| [components/product-search.tsx](components/product-search.tsx) | 首页商品搜索交互 |
-| [app/api/products](app/api/products) | 搜索和补查 HTTP 接口 |
-| [tests](tests) | Agent A、HTTP 和跨模块测试 |
-| [docs](docs) | 接口与集成说明 |
-
-## 协作约定
-
-多人开发时，每项功能从最新 `main` 新建短分支，目标在约一小时内完成一个可验收阶段并合并，以减少长期分支冲突：
-
-```powershell
-git switch main
-git pull --ff-only origin main
-git switch -c feature/简短功能名
-```
-
-合并前运行与改动范围相符的测试，并再次同步 `main` 检查冲突。提交只包含本次工作，不覆盖其他成员的修改。
-
-修改 Next.js 代码前，请先阅读根目录 [AGENTS.md](AGENTS.md) 和当前安装版本的 `node_modules/next/dist/docs/` 文档。
+修改 Next.js 代码前必须阅读当前安装版本的 `node_modules/next/dist/docs/`。每项工作从最新 `main` 创建短分支，保留不属于当前任务的现有修改，提交使用 Conventional Commit。
