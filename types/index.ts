@@ -155,6 +155,65 @@ export type ProviderSearchResult<T> = {
   warnings?: string[]
 }
 
+// Hackathon integration: main agent -> search + product check -> payment risk.
+export type SelectProductRequest = {
+  searchInput: StructuredSearchInput
+  quantity?: number
+  destination?: string | null
+  /** Previously rejected exact offers; skip them when selecting from the top ten. */
+  excludedCandidates?: ProductIdentity[]
+}
+
+export type ProductConditionCheck = ConditionCheck & { must: MustFlag }
+
+export type ProductReview = ProductIdentity & {
+  status: "passed" | "rejected" | "needs_verification"
+  checks: ProductConditionCheck[]
+}
+
+/** Interface 2: exactly one product, never permission to pay or place an order. */
+export type ProductHandoff = {
+  taskId: string
+  requirementVersion: number
+  quantity: number
+  destination: string | null
+  searchInput: StructuredSearchInput
+  candidate: Candidate
+  productCheck: {
+    status: "passed"
+    checkedAt: string
+    checks: ProductConditionCheck[]
+  }
+}
+
+export type SelectProductResult = {
+  taskId: string
+  requirementVersion: number
+  status: "ready" | "no_match" | "needs_verification" | "failed"
+  selection: ProductHandoff | null
+  searchStatus: SearchStatus
+  reviews: ProductReview[]
+  warnings: string[]
+  error?: { code: SearchErrorCode; message: string }
+}
+
+/** Main agent sends this directly to payment risk; search never needs it. */
+export type PaymentRiskAuthorization = {
+  taskId: string
+  requirementVersion: number
+  userId: string
+  authorization: Authorization
+  /** Opaque references only. Empty means no restriction within the user's available methods. */
+  allowedPaymentMethodIds: string[]
+  preferredPaymentMethodId: string | null
+}
+
+/** Contract for the external payment-risk service; no such HTTP handler is implemented here. */
+export type PaymentRiskRequest = {
+  selection: ProductHandoff
+  userAuthorization: PaymentRiskAuthorization
+}
+
 // Agent B contract; Candidate remains the existing Agent A search shape.
 export type ConstraintOperator = "lte" | "gte" | "eq" | "in" | "notIn" | "containsAny" | "notContainsAny"
 

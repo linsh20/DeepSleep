@@ -1,0 +1,23 @@
+{
+  "searchInput": {
+    "taskId": "demo-001",
+    "requirementVersion": 1,
+    "useLlm": false,
+    "product_name": { "value": "lotion", "aliases": ["乳液"], "must": 1 },
+    "range_conditions": [
+      { "field": "volumeMl", "min": 100, "max": 300, "must": 1 },
+      { "field": "priceMinor", "min": 10000, "max": 30000, "must": 0 }
+    ],
+    "include_keywords": [
+      { "keywords": ["sensitive skin"], "must": 1 },
+      { "keywords": ["moisturizing", "moisturising", "hydration"], "must": 0 }
+    ],
+    "exclude_keywords": [
+      { "keywords": ["alcohol", "ethanol"], "scope": "ingredients", "must": 1 },
+      { "keywords": ["fragrance", "parfum"], "scope": "ingredients", "must": 0 }
+    ]
+  },
+  "quantity": 1,
+  "destination": "香港",
+  "excludedCandidates": []
+}
