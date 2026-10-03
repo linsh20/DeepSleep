@@ -50,7 +50,7 @@ export const DEFAULT_FIELD_POLICIES: Readonly<Record<string, FieldPolicy>> = {
   netItemPriceMinor: { direction: "min", label: "价格" },
   itemPriceMinor: { direction: "min", label: "价格" },
   shippingMinor: { direction: "min", label: "配送成本" },
-  weightKg: { direction: "min", label: "便携" },
+  weightGrams: { direction: "min", label: "便携" },
   performanceScore: { direction: "max", label: "性能" },
   ramGB: { direction: "max", label: "内存" },
   storageGB: { direction: "max", label: "存储" },

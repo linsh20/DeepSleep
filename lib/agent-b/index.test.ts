@@ -24,7 +24,7 @@ function candidate(
   productId: string,
   options: {
     price: number
-    weightKg: number
+    weightGrams: number
     performanceScore: number
     discount?: number
     priceMinutesOld?: number
@@ -38,7 +38,7 @@ function candidate(
     title: `候选 ${productId}`,
     url: `https://example.test/${productId}`,
     attributes: {
-      weightKg: fact(options.weightKg),
+      weightGrams: fact(options.weightGrams),
       performanceScore: fact(options.performanceScore),
       ramGB: fact(16),
     },
@@ -65,7 +65,7 @@ function requirement(): Requirement {
     hardConstraints: [{ field: "ramGB", op: "gte", value: 16 }],
     preferences: [
       { field: "performanceScore", weight: 0.7, source: "explicit" },
-      { field: "weightKg", weight: 0.3, source: "explicit" },
+      { field: "weightGrams", weight: 0.3, source: "explicit" },
     ],
     excludedProductIds: [],
     destination: "上海",
@@ -77,10 +77,10 @@ test("evaluateCandidates filters hard constraints and keeps diverse recommendati
     {
       requirement: requirement(),
       candidates: [
-        candidate("balanced", { price: 500_000, weightKg: 1.4, performanceScore: 85 }),
-        candidate("performance", { price: 590_000, weightKg: 2.0, performanceScore: 100 }),
-        candidate("portable", { price: 480_000, weightKg: 1.0, performanceScore: 70 }),
-        candidate("over-budget", { price: 700_000, weightKg: 1.2, performanceScore: 95 }),
+        candidate("balanced", { price: 500_000, weightGrams: 1400, performanceScore: 85 }),
+        candidate("performance", { price: 590_000, weightGrams: 2000, performanceScore: 100 }),
+        candidate("portable", { price: 480_000, weightGrams: 1000, performanceScore: 70 }),
+        candidate("over-budget", { price: 700_000, weightGrams: 1200, performanceScore: 95 }),
       ],
     },
     { now: () => NOW },
@@ -94,10 +94,42 @@ test("evaluateCandidates filters hard constraints and keeps diverse recommendati
   assert.ok(result.recommendations.every((item) => item.score >= 0 && item.score <= 1))
 })
 
+test("gram-based weight constraints and preferences accept A's canonical field path", async () => {
+  for (const field of ["weightGrams", "attributes.weightGrams"]) {
+    const req = requirement()
+    req.hardConstraints = [{ field, op: "lte", value: 1500 }]
+    req.preferences = [{ field, weight: 1, source: "explicit" }]
+    const candidates = [
+      candidate("light", { price: 500_000, weightGrams: 1300, performanceScore: 90 }),
+      candidate("boundary", { price: 500_000, weightGrams: 1500, performanceScore: 90 }),
+      candidate("heavy", { price: 500_000, weightGrams: 1501, performanceScore: 90 }),
+      candidate("unknown", { price: 500_000, weightGrams: 1400, performanceScore: 90 }),
+    ]
+    candidates[3].attributes.weightGrams.value = null
+
+    const result = await evaluateCandidates(
+      { requirement: req, candidates },
+      { now: () => NOW },
+    )
+
+    assert.equal(result.status, "needsVerification")
+    assert.deepEqual(
+      result.recommendations.map(({ productId, score }) => ({ productId, score })),
+      [{ productId: "light", score: 1 }, { productId: "boundary", score: 0 }],
+    )
+    assert.deepEqual(result.rejected.map(({ productId }) => productId), ["heavy"])
+    assert.ok(result.recommendations.every((item) =>
+      item.evidenceFields.includes("attributes.weightGrams"),
+    ))
+    assert.equal(result.verificationRequests[0].productId, "unknown")
+    assert.deepEqual(result.verificationRequests[0].fields, ["attributes.weightGrams"])
+  }
+})
+
 test("unknown hard constraint triggers verification and is not recommended", async () => {
   const unknownRam = candidate("unknown-ram", {
     price: 500_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
   })
   unknownRam.attributes.ramGB = {
@@ -124,7 +156,7 @@ test("all definitively rejected candidates produce needsSearch", async () => {
       candidates: [
         candidate("too-expensive", {
           price: 800_000,
-          weightKg: 1.1,
+          weightGrams: 1100,
           performanceScore: 100,
         }),
       ],
@@ -144,7 +176,7 @@ test("item budget uses the verified net item price after discount", async () => 
   const discounted = candidate("discounted", {
     price: 650_000,
     discount: 100_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
   })
 
@@ -161,7 +193,7 @@ test("item budget uses the verified net item price after discount", async () => 
 test("checkPurchase approves only against the matching backend authorization", async () => {
   const selected = candidate("approved", {
     price: 500_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
   })
   const authorization: Authorization = {
@@ -193,7 +225,7 @@ test("checkPurchase approves only against the matching backend authorization", a
 test("checkPurchase blocks an authorization that differs from the backend record", async () => {
   const selected = candidate("tampered", {
     price: 500_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
   })
   const supplied: Authorization = {
@@ -226,7 +258,7 @@ test("checkPurchase blocks an authorization that differs from the backend record
 test("checkPurchase requests fresh dynamic facts before purchase", async () => {
   const selected = candidate("stale", {
     price: 500_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
     priceMinutesOld: 2,
   })
@@ -259,7 +291,7 @@ test("checkPurchase requests fresh dynamic facts before purchase", async () => {
 test("checkPurchase safely blocks when no backend authorization lookup is supplied", async () => {
   const selected = candidate("no-backend", {
     price: 500_000,
-    weightKg: 1.3,
+    weightGrams: 1300,
     performanceScore: 90,
   })
   const authorization: Authorization = {
@@ -293,7 +325,7 @@ test("runtime validation rejects preference weights that do not add up to one", 
         candidates: [
           candidate("invalid", {
             price: 500_000,
-            weightKg: 1.3,
+            weightGrams: 1300,
             performanceScore: 90,
           }),
         ],
