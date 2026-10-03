@@ -136,6 +136,24 @@ export function ProductSearch() {
             </ol>
           </CardContent>
         </Card>
+        {result.debug && <Card>
+          <CardHeader>
+            <CardTitle>LLM 调试日志</CardTitle>
+            <CardDescription>仅限本地开发。显示实际请求体和上游响应，不包含 API Key。</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {result.debug.llmEvents.length === 0
+              ? <p className="text-sm text-muted-foreground">本次搜索没有调用 LLM。</p>
+              : result.debug.llmEvents.map((event, index) => <details key={`${event.productId}:${event.direction}:${index}`} className="rounded-md border p-3">
+                  <summary className="cursor-pointer text-sm font-medium">
+                    {event.productId} · {event.direction}
+                  </summary>
+                  <pre className="mt-3 max-h-96 overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-3 text-xs">
+                    {formatDebugPayload(event.payload)}
+                  </pre>
+                </details>)}
+          </CardContent>
+        </Card>}
         {result.warnings.length > 0 && <div role="alert" className="rounded-lg border bg-muted/40 p-3 text-sm">
           <p className="font-medium">运行提示</p>
           <ul className="mt-2 list-inside list-disc">{result.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul>
@@ -196,4 +214,8 @@ function money(input: number | null | undefined): string {
 
 function displayValue(input: string | number | boolean | null | undefined, unit: string): string {
   return input == null ? "未知" : `${String(input)}${unit ? ` ${unit}` : ""}`
+}
+
+function formatDebugPayload(payload: unknown): string {
+  return typeof payload === "string" ? payload : JSON.stringify(payload, null, 2)
 }

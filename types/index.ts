@@ -115,6 +115,12 @@ export type RankedCandidate = {
 export type SearchStatus = "complete" | "partial" | "failed"
 export type SearchOutcome = "ranked" | "no_match" | "failed"
 
+export type LlmDebugEvent = {
+  productId: string
+  direction: "request" | "response" | "error"
+  payload: unknown
+}
+
 export type RankedSearchResult = {
   taskId: string
   requirementVersion: number
@@ -124,6 +130,10 @@ export type RankedSearchResult = {
   filterLogs: FilterLog[]
   warnings: string[]
   message: string
+  /** Present only when the server-side local development debug switch is enabled. */
+  debug?: {
+    llmEvents: LlmDebugEvent[]
+  }
 }
 
 export type SearchErrorCode =

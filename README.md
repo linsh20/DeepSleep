@@ -76,12 +76,18 @@ LLM_API_URL=https://provider.example/v1/chat/completions
 LLM_API_KEY=...
 LLM_MODEL=...
 LLM_TIMEOUT_MS=30000
+LLM_LOG_PAYLOADS=1
+LLM_DEBUG_UI=1
 ```
 
 接口采用 OpenAI-compatible chat-completion JSON 格式。配置和调用只存在于服务端，禁止使用 `NEXT_PUBLIC_` 暴露密钥。
 `LLM_API_URL` 必须是完整的 Chat Completions 地址，例如以 `/v1/chat/completions` 结尾。`LLM_TIMEOUT_MS` 可选，默认 30000 毫秒。
 
 开发服务会输出 `[llm-score]` 结构化日志，仅包含成功/失败、商品 ID、耗时、条件数和安全错误代码；不会记录密钥、提示词、商品正文或模型理由。
+本地调试时可设置 `LLM_LOG_PAYLOADS=1`，服务端终端会额外输出完整的 `[llm-score:request]` 与 `[llm-score:response]`。此开关在生产环境中强制关闭，且日志始终不包含 API Key；因为其中包含商品正文和模型理由，排查完成后应删除或改为 `0`。
+设置 `LLM_DEBUG_UI=1` 并重启开发服务后，搜索页面会出现“LLM 调试日志”，按商品展示实际发送的请求体、原始响应和安全错误代码。该开关只在非生产环境生效，响应不会包含 API Key；调试载荷仍可能包含商品正文和模型理由，排查完成后应关闭。
+
+本地验证：在 `.env.local` 配置上述 LLM 变量和 `LLM_DEBUG_UI=1`，运行 `npm run dev`，打开 `http://localhost:3000` 并提交一次搜索，然后展开页面中的“LLM 调试日志”。修改 `.env.local` 后需要重启开发服务。
 
 ## 商品数据配置
 

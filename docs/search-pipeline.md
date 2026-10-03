@@ -80,6 +80,8 @@ LLM_API_URL=https://provider.example/v1/chat/completions
 LLM_API_KEY=...
 LLM_MODEL=...
 LLM_TIMEOUT_MS=30000
+LLM_LOG_PAYLOADS=1
+LLM_DEBUG_UI=1
 ```
 
 不得使用 `NEXT_PUBLIC_` 暴露密钥。商品文本作为不可信数据放在 user 内容中；系统指令禁止执行商品文本中的指令或补写事实。模型输出必须覆盖全部条件、满足 1–5 整数分和证据字段约束。
@@ -88,6 +90,8 @@ LLM_TIMEOUT_MS=30000
 未配置模型、超时或单商品输出非法时，该商品使用确定性评分降级，结果标记为 `partial`。单商品失败不会导致整个搜索失败。确定性规则为满足 5 分、违反 1 分、未知 3 分。
 
 服务端以 `[llm-score]` 输出安全结构化日志，字段包括 `event`、`productId`、`durationMs`、`conditionCount` 和错误代码。日志不会包含 API Key、端点、提示词、商品正文、模型正文或上游私有错误消息。
+仅在本地排查时，可用 `LLM_LOG_PAYLOADS=1` 额外打印完整的 `[llm-score:request]` 和 `[llm-score:response]`。生产环境会忽略此开关，日志也不会包含 API Key。完整载荷含商品正文和模型理由，不应长期保存或提交。
+`LLM_DEBUG_UI=1` 会在非生产环境把相同的请求、响应和安全错误代码附加到 `RankedSearchResult.debug.llmEvents`，搜索页以折叠面板展示。调试事件按 `productId` 关联，并限制为每次搜索最多 30 条；API Key 从不进入事件。生产环境强制关闭该能力。
 
 ## 状态语义
 

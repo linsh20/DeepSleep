@@ -178,7 +178,7 @@ test("OpenAI-compatible scorer canonicalizes common candidate evidence prefixes 
       apiKey: "test-secret",
       model: "test-model",
     })
-    const result = await createProductSearch(provider, scorer).searchProducts(baseInput({
+    const result = await createProductSearch(provider, scorer, { includeLlmDebug: true }).searchProducts(baseInput({
       product_name: { value: "Adapter Lotion", must: 1 },
       range_conditions: [], include_keywords: [], exclude_keywords: [],
     }))
@@ -190,10 +190,22 @@ test("OpenAI-compatible scorer canonicalizes common candidate evidence prefixes 
     assert.match(logLine, /^\[llm-score\]/)
     assert.match(logLine, /"event":"success"/)
     assert.ok(!logLine.includes("test-secret"))
+    assert.deepEqual(result.debug.llmEvents.map((event) => event.direction), ["request", "response"])
+    assert.equal(result.debug.llmEvents[0].productId, "adapter")
+    assert.ok(JSON.stringify(result.debug).includes("test-model"))
+    assert.ok(!JSON.stringify(result.debug).includes("test-secret"))
   } finally {
     globalThis.fetch = originalFetch
     console.info = originalInfo
   }
+})
+
+test("LLM payloads are omitted from results unless local UI debugging is explicitly enabled", async () => {
+  const provider = { recall: async () => ({ products: [raw("private", "Private Lotion")], status: "complete" }) }
+  const result = await createProductSearch(provider, { ...fiveScorer, calls: [] }).searchProducts(baseInput({
+    product_name: { value: "Lotion", must: 1 }, range_conditions: [], include_keywords: [], exclude_keywords: [],
+  }))
+  assert.equal("debug" in result, false)
 })
 
 test("a scorer timeout is bounded and falls back without losing the candidate", async () => {

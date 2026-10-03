@@ -3,6 +3,7 @@ import type {
   Candidate,
   ConditionScore,
   Fact,
+  LlmDebugEvent,
   RankedCandidate,
   RankedSearchResult,
   ScoringCondition,
@@ -32,6 +33,7 @@ export type ProductSearchOptions = {
   providerTimeoutMs?: number
   scorerTimeoutMs?: number
   scorerConcurrency?: number
+  includeLlmDebug?: boolean
 }
 
 class SearchValidationError extends Error {}
@@ -45,9 +47,11 @@ export function createProductSearch(
   const providerTimeoutMs = options.providerTimeoutMs ?? 5000
   const scorerTimeoutMs = options.scorerTimeoutMs ?? positiveIntegerEnv("LLM_TIMEOUT_MS") ?? 30000
   const scorerConcurrency = options.scorerConcurrency ?? 3
-  validateOptions({ recallLimit, providerTimeoutMs, scorerTimeoutMs, scorerConcurrency })
+  const includeLlmDebug = options.includeLlmDebug ?? false
+  validateOptions({ recallLimit, providerTimeoutMs, scorerTimeoutMs, scorerConcurrency, includeLlmDebug })
 
   async function searchProducts(unsafeInput: StructuredSearchInput): Promise<RankedSearchResult> {
+    const llmEvents: LlmDebugEvent[] = []
     const identity = resultIdentity(unsafeInput)
     let input: StructuredSearchInput
     try {
@@ -116,6 +120,7 @@ export function createProductSearch(
         filterLogs: filtered.logs,
         warnings: unique(warnings),
         message: "没有符合当前条件的商品。",
+        ...(includeLlmDebug ? { debug: { llmEvents } } : {}),
       }
     }
 
@@ -137,7 +142,15 @@ export function createProductSearch(
         let conditionScores: ConditionScore[]
         try {
           conditionScores = await timed(
-            (signal) => scorer.scoreCandidate({ candidate, conditions }, { signal }),
+            (signal) => scorer.scoreCandidate(
+              { candidate, conditions },
+              {
+                signal,
+                onDebugEvent: includeLlmDebug && llmEvents.length < 30
+                  ? (event) => { if (llmEvents.length < 30) llmEvents.push(event) }
+                  : undefined,
+              },
+            ),
             scorerTimeoutMs,
           )
           assertConditionScores(conditionScores, conditions)
@@ -173,6 +186,7 @@ export function createProductSearch(
       filterLogs: filtered.logs,
       warnings: unique([...warnings, ...scoreWarnings]),
       message: `已按条件满足度排序并输出 ${candidates.length} 种商品。`,
+      ...(includeLlmDebug ? { debug: { llmEvents } } : {}),
     }
   }
 
@@ -182,7 +196,10 @@ export function createProductSearch(
 const defaultSearch = createProductSearch(
   createDefaultProductProvider(),
   createConfiguredConditionScorer(),
-  { recallLimit: 500 },
+  {
+    recallLimit: 500,
+    includeLlmDebug: process.env.NODE_ENV !== "production" && process.env.LLM_DEBUG_UI?.trim() === "1",
+  },
 )
 export const searchProducts = defaultSearch.searchProducts
 
@@ -397,7 +414,8 @@ function validateOptions(options: Required<ProductSearchOptions>): void {
   if (!Number.isSafeInteger(options.recallLimit) || options.recallLimit < 10 || options.recallLimit > 500 ||
       !Number.isSafeInteger(options.providerTimeoutMs) || options.providerTimeoutMs < 1 ||
       !Number.isSafeInteger(options.scorerTimeoutMs) || options.scorerTimeoutMs < 1 ||
-      !Number.isSafeInteger(options.scorerConcurrency) || options.scorerConcurrency < 1 || options.scorerConcurrency > 10) {
+      !Number.isSafeInteger(options.scorerConcurrency) || options.scorerConcurrency < 1 || options.scorerConcurrency > 10 ||
+      typeof options.includeLlmDebug !== "boolean") {
     throw new SearchValidationError("Invalid product search options")
   }
 }
