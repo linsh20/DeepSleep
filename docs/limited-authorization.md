@@ -1,5 +1,7 @@
 # 有限授权与确定性风控（仅沙盒）
 
+> 后续结算准备已接入服务端受控 Shopping 测试目录；支持范围和 prepare 新字段见 [Shopping 结算闭环](shopping-checkout.md)。目录增加不会自动扩大已确认的用户授权。
+
 基于集成提交 edaabc5；分支 feat/limited-authorization。未回退主链路，不改 Shopping、Watsons 映射或 /shop。五份 risk_control_*_v2 / database_schema_v2 文档按指定顺序读取；以下落地采用用户本轮约定优先。
 
 ## 与设计文档的差异及规则对应

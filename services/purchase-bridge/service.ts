@@ -1,3 +1,4 @@
+import { CheckoutCoordinator } from "../checkout/coordinator"
 import { LimitedExecutionGate } from "../risk-control/gate"
 import { randomUUID } from "node:crypto"
 import type { SqliteTaskRepository } from "../main-agent/sqlite-repository"
@@ -22,12 +23,20 @@ export function sandboxSource(task: MainTask): SandboxTask {
 export function currentTaskResolver(main: SqliteTaskRepository) {
   return (snapshot: SandboxTask): SandboxTask => {
     const linked = main.db.prepare("SELECT 1 FROM main_purchase_links WHERE task_id=?").get(snapshot.taskId)
-    return linked ? sandboxSource(main.get(snapshot.taskId, snapshot.userId)) : snapshot
+    if(!linked)return snapshot
+    const task=main.get(snapshot.taskId,snapshot.userId)
+    const row=main.db.prepare("SELECT data FROM sandbox_plans WHERE task_id=? AND version=?").get(snapshot.taskId,snapshot.requirementVersion)
+    const plan=row?JSON.parse(String(row.data)) as SandboxPlan:undefined
+    if(!plan?.checkout)return sandboxSource(task)
+    ensure(task.requirement,"REQUIREMENT_INCOMPLETE","当前任务缺少完整需求",409)
+    return {taskId:task.taskId,userId:task.userId,intent:task.intent,requirementVersion:task.requirementVersion,requirement:task.requirement,quantity:task.requirementDraft.quantity!}
   }
 }
 export class PurchaseBridge {
   readonly execution: PurchaseExecutionService
+  readonly checkout: CheckoutCoordinator
   constructor(private main: SqliteTaskRepository, private repo: SqlitePurchaseRepository, private merchant: MerchantOrderPort, payment: PaymentPort) {
+    this.checkout = new CheckoutCoordinator(main,repo,merchant)
     this.execution = new PurchaseExecutionService(repo, merchant, new LimitedExecutionGate(repo), payment, { currentTask: currentTaskResolver(main) })
   }
   private version(taskId: string, owner: string, version: number) {
@@ -51,8 +60,13 @@ export class PurchaseBridge {
     })
     return { taskId, requirementVersion: task.requirementVersion, intent: task.intent, purchases }
   }
-  async prepare(taskId: string, owner: string, input: { expectedVersion: number; requestId: string }) {
+  async prepare(taskId: string, owner: string, input: { expectedVersion: number; requestId: string; candidateId?: string }) {
+    if(input.candidateId!==undefined){
+      const checkoutPreparation=await this.checkout.prepare(taskId,owner,{...input,candidateId:input.candidateId})
+      return {...this.state(taskId,owner),checkoutPreparation}
+    }
     ensure(/^[A-Za-z0-9_-]{8,100}$/.test(input.requestId), "INVALID_REQUEST_ID", "requestId 无效")
+    ensure(!this.repo.db.prepare("SELECT 1 FROM main_checkout_attempts WHERE owner=? AND request_id=?").get(owner,input.requestId),"REQUEST_CONFLICT","请求已用于候选结算准备",409)
     const prior = this.main.db.prepare("SELECT * FROM main_purchase_requests WHERE owner=? AND request_id=?").get(owner, input.requestId)
     if (prior) { ensure(prior.task_id === taskId && prior.version === input.expectedVersion, "REQUEST_CONFLICT", "requestId 已用于其他准备请求", 409); return this.state(taskId, owner) }
     const task = sandboxSource(this.version(taskId, owner, input.expectedVersion))
@@ -65,6 +79,7 @@ export class PurchaseBridge {
       quote = await this.merchant.quote(plan)
     }
     this.repo.transaction(() => {
+      ensure(!this.repo.db.prepare("SELECT 1 FROM main_checkout_attempts WHERE owner=? AND request_id=?").get(owner,input.requestId),"REQUEST_CONFLICT","请求已用于候选结算准备",409)
       const current = sandboxSource(this.version(taskId, owner, input.expectedVersion))
       this.noUnresolvedOtherVersion(taskId, input.expectedVersion)
       const repeated = this.main.db.prepare("SELECT * FROM main_purchase_requests WHERE owner=? AND request_id=?").get(owner, input.requestId)

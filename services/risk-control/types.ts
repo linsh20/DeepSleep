@@ -1,3 +1,4 @@
+import { SUPPORTED_PRODUCT_IDS, SUPPORTED_MERCHANT_IDS, SUPPORTED_PAYMENT_METHODS } from "../checkout/catalog"
 import type { ExecutionGate } from "../purchase-execution/types"
 export type AuthorizationTerms = {
   startsAt: number; expiresAt: number; singleSoftMinor: number; singleHardMinor: number;
@@ -12,7 +13,7 @@ export type Confirmation = { confirmationId: string; userId: string; operationId
 export const RISK_CONFIG = {
   policyVersion: "limited-sandbox-v1",
   frequencyWindowMs: 600000, maxTransactions: 3, duplicateWindowMs: 600000, confirmationMs: 120000,
-  productIds: ["sandbox-lotion"], merchantIds: ["demo-merchant"], paymentMethods: ["stripe_test_card"],
+  productIds: SUPPORTED_PRODUCT_IDS, merchantIds: SUPPORTED_MERCHANT_IDS, paymentMethods: SUPPORTED_PAYMENT_METHODS,
   injectionSignals: ["忽略规则", "忽略以上规则", "立即下单", "不要告诉用户", "直接付款", "跳过风控", "无视安全", "bypass", "ignore instructions"],
 }
 export type RiskConfig = typeof RISK_CONFIG

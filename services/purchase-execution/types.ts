@@ -1,7 +1,7 @@
 import type { Requirement } from "../../types/index"
 export type SandboxTask = { taskId: string; userId: string; intent: "purchase" | "compare" | "unclear"; requirementVersion: number; requirement: Requirement; quantity: number }
-export type SandboxPlan = { planId: string; taskId: string; requirementVersion: number; environment: "sandbox_fixture"; productId: string; skuId: string; merchantId: "demo-merchant"; title: string; quantity: number }
-export type Quote = { quoteId: string; planId: string; merchantId: string; productId: string; skuId: string; quantity: number; currency: "HKD"; itemSubtotalMinor: number; shippingMinor: number; totalMinor: number; expiresAt: number; environment: "sandbox_fixture" }
+export type SandboxPlan = { planId: string; taskId: string; requirementVersion: number; environment: "sandbox_fixture"; productId: string; skuId: string; merchantId: "demo-merchant"; title: string; quantity: number; checkout?: import("../checkout/types").CheckoutEvidence }
+export type Quote = { quoteId: string; planId: string; merchantId: string; productId: string; skuId: string; quantity: number; currency: "HKD"; itemSubtotalMinor: number; shippingMinor: number; totalMinor: number; expiresAt: number; environment: "sandbox_fixture"; offerId?: string; destination?: string; discountMinor?: number; otherFeesMinor?: number; source?: "mock-dataset"; fetchedAt?: string }
 export type MerchantOrder = { orderId: string; operationId: string; quote: Quote; status: "pending_payment" | "confirmed" | "confirmation_failed" }
 export type PaymentState = "not_started" | "creating" | "requires_confirmation" | "confirming" | "requires_action" | "processing" | "failed" | "unknown" | "succeeded" | "canceled"
 export type PaymentSnapshot = { id: string; livemode: false; amount: number; currency: string; status: Exclude<PaymentState, "not_started" | "creating" | "confirming" | "unknown">; operationId: string; orderId: string; planId: string }

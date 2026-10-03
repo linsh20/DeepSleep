@@ -1,3 +1,4 @@
+import { CHECKOUT_PRODUCT, CheckoutCatalogProvider, checkoutPolicy } from "../checkout/catalog"
 import { createShoppingAgent, type ShoppingDependencies } from "../shopping-agent"
 import { createProductSearch } from "../product-search"
 import { WatsonsSqliteProductProvider } from "../watsons-product-provider"
@@ -63,7 +64,7 @@ export class ContractShoppingPort implements ShoppingPort {
     signal.throwIfAborted()
     // Debug payloads are not a durable product/decision contract.
     if (result.search) delete result.search.debug
-    result.diagnostics.warnings.push(...derived.translation.warnings,"快照价格不是实时结账报价；推荐不构成授权，Watsons 结果不可交给沙盒 execute。")
+    result.diagnostics.warnings.push(...derived.translation.warnings,"搜索价格不是最终结账报价；推荐不构成授权。仅服务端登记的演示商品可另行准备模拟报价及 B 复核，Watsons 尚不支持。")
     return {...result,kind:"shopping_contract_v1",searchInput:derived.searchInput,translation:derived.translation}
   }
 }
@@ -74,5 +75,7 @@ export function configuredShoppingPort(): ShoppingPort {
   }
   const scorer = llm ? createConfiguredConditionScorer() : new DeterministicConditionScorer()
   const search = createProductSearch(new WatsonsSqliteProductProvider(),scorer,{recallLimit:500,providerTimeoutMs:4000,scorerTimeoutMs:5000,scorerConcurrency:2,includeLlmDebug:false})
-  return new ContractShoppingPort(search,watsonsPolicy(),llm)
+  const watsons = new ContractShoppingPort(search,watsonsPolicy(),llm)
+  const demo = new ContractShoppingPort(createProductSearch(new CheckoutCatalogProvider(),new DeterministicConditionScorer()),checkoutPolicy(),false)
+  return { search(input,signal) { return (input.requirement.category === CHECKOUT_PRODUCT.category && input.requirement.query === CHECKOUT_PRODUCT.title ? demo : watsons).search(input,signal) } }
 }

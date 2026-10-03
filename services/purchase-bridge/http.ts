@@ -24,10 +24,10 @@ export function bridgeHttp(bridge: PurchaseBridge, main: SqliteTaskRepository) {
       try { for (;;) { const {done,value} = await reader.read(); if (done) break; size += value.length; if (size > 4096) { await reader.cancel(); throw new PurchaseError("INVALID_INPUT", "请求过大", 413) }; chunks.push(value) } } finally { reader.releaseLock() }
       let body: Record<string, unknown>
       try { body = JSON.parse(Buffer.concat(chunks).toString("utf8")) } catch { throw new PurchaseError("INVALID_INPUT", "JSON 无效") }
-      const fields = action === "prepare" ? ["taskId", "expectedVersion", "requestId"] : action === "execute" ? ["taskId", "planId", "expectedVersion", "requestId", "testPermission"] : ["taskId", "planId", "requestId"]
+      const fields = action === "prepare" ? ["taskId", "expectedVersion", "requestId", "candidateId"] : action === "execute" ? ["taskId", "planId", "expectedVersion", "requestId", "testPermission"] : ["taskId", "planId", "requestId"]
       ensure(body && typeof body === "object" && !Array.isArray(body) && Object.keys(body).every(k => fields.includes(k)), "INVALID_INPUT", "包含不支持的字段")
       ensure(typeof body.taskId === "string" && typeof body.requestId === "string" && /^[A-Za-z0-9_-]{8,100}$/.test(body.requestId), "INVALID_INPUT", "缺少 taskId 或 requestId")
-      if (action === "prepare") { ensure(Number.isSafeInteger(body.expectedVersion), "INVALID_INPUT", "版本无效"); return json(await bridge.prepare(body.taskId, owner, { expectedVersion: body.expectedVersion as number, requestId: body.requestId })) }
+      if (action === "prepare") { ensure(body.candidateId===undefined || typeof body.candidateId==="string" && body.candidateId.length<=600,"INVALID_INPUT","候选身份无效"); ensure(Number.isSafeInteger(body.expectedVersion), "INVALID_INPUT", "版本无效"); return json(await bridge.prepare(body.taskId, owner, { expectedVersion: body.expectedVersion as number, requestId: body.requestId, candidateId:body.candidateId as string|undefined })) }
       ensure(typeof body.planId === "string", "INVALID_INPUT", "需要 planId")
       if (action === "recover") return json(await bridge.recover(body.taskId, owner, body.planId))
       ensure(Number.isSafeInteger(body.expectedVersion) && body.testPermission === true, "TEST_PERMISSION_REQUIRED", "需要版本及明确的一次测试许可", 403)
