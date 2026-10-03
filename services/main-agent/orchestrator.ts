@@ -4,7 +4,7 @@ import type { RequirementInterpreter } from "./requirement-interpreter"
 import type { TaskRepository } from "./task-repository"
 import type { ShoppingPort, ShoppingPortResult } from "./shopping-port"
 import { TaskError } from "./types"
-import type { MainTask, RequirementDraft, TaskIntent, TaskStatus } from "./types"
+import type { Interpretation, MainTask, RequirementDraft, TaskIntent, TaskStatus } from "./types"
 
 const transitions: Record<TaskStatus, readonly TaskStatus[]> = {
   needs_clarification: ["needs_clarification", "ready_to_search"],
@@ -68,7 +68,12 @@ export type SaveRequirementInput = { requestId: string; expectedVersion: number;
 export class MainTaskOrchestrator {
   private timeoutMs: number
   private retries: number
-  constructor(private repository: TaskRepository, private interpreter: RequirementInterpreter, private shopping: ShoppingPort, options: { timeoutMs?: number; retries?: number } = {}) {
+  private modelInterpreter?: RequirementInterpreter
+  private modelTimeoutMs: number
+  constructor(private repository: TaskRepository, private interpreter: RequirementInterpreter, private shopping: ShoppingPort, options: { timeoutMs?: number; retries?: number; modelInterpreter?: RequirementInterpreter; modelTimeoutMs?: number } = {}) {
+    this.modelInterpreter = options.modelInterpreter
+    this.modelTimeoutMs = options.modelTimeoutMs ?? 20000
+    if (!Number.isSafeInteger(this.modelTimeoutMs) || this.modelTimeoutMs < 1 || this.modelTimeoutMs > 30000) throw new TaskError("INVALID_INPUT", "模型超时配置无效")
     this.timeoutMs = options.timeoutMs ?? 3000
     this.retries = options.retries ?? 1
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1 || this.timeoutMs > 30000 || !Number.isInteger(this.retries) || this.retries < 0 || this.retries > 2) throw new TaskError("INVALID_INPUT", "调用限制无效")
@@ -99,13 +104,62 @@ export class MainTaskOrchestrator {
       const checked = clarify(intentValue(interpreted.intent), draftValue(interpreted.requirementDraft))
       return this.repository.update(taskId, userId, task => {
         if (task.requirementVersion !== input.expectedVersion) throw new TaskError("VERSION_CONFLICT", "需求已更新，请刷新后重试", 409)
-        if (task.intent === checked.intent && JSON.stringify(task.requirementDraft) === JSON.stringify(checked.requirementDraft)) return
-        task.requirementVersion++
-        Object.assign(task, checked)
-        task.requirement = completeRequirement(checked, taskId, task.requirementVersion)
-        task.shoppingResult = null
-        event(task, "requirement_updated", "需求变化使旧版本结果失效")
-        transition(task, task.requirement ? "ready_to_search" : "needs_clarification")
+        this.applyInterpretation(task, checked)
+      })
+    })
+  }
+  private applyInterpretation(task: MainTask, checked: Interpretation) {
+    if (task.intent === checked.intent && JSON.stringify(task.requirementDraft) === JSON.stringify(checked.requirementDraft)) return
+    task.requirementVersion++
+    Object.assign(task, checked)
+    task.requirement = completeRequirement(checked, task.taskId, task.requirementVersion)
+    task.shoppingResult = null
+    event(task, "requirement_updated", "需求变化使旧版本结果失效")
+    transition(task, task.requirement ? "ready_to_search" : "needs_clarification")
+  }
+  message(taskId: string, userId: string, input: { requestId: string; expectedVersion: number; message: string }) {
+    if (!Number.isSafeInteger(input.expectedVersion) || input.expectedVersion < 0 || typeof input.message !== "string" || !input.message.trim() || input.message.length > 2000) throw new TaskError("INVALID_INPUT", "消息须为 1–2000 字符，版本须有效")
+    // Do not forward obvious credentials or payment details entered accidentally.
+    if (/sk-[a-z0-9_-]{12,}|authorization\s*:|api[_ -]?key\s*[:=]|(?:\d[ -]?){13,19}/i.test(input.message)) throw new TaskError("SENSITIVE_INPUT", "请勿在聊天中输入密钥或支付信息")
+    return this.once(userId, input.requestId, ["message", taskId, input.expectedVersion, input.message], async () => {
+      const snapshot = this.repository.update(taskId, userId, task => {
+        if (task.requirementVersion !== input.expectedVersion) throw new TaskError("VERSION_CONFLICT", "需求已更新，请刷新后重试", 409)
+        task.conversationRevision = (task.conversationRevision ?? 0) + 1
+        task.messages ??= []
+        task.messages.push({ requestId: input.requestId, role: "user", content: input.message, at: new Date().toISOString() })
+        event(task, "message_received", "自然语言消息已接收")
+      })
+      let reply: string, errorCode: string | undefined
+      try {
+        if (!this.modelInterpreter) throw new TaskError("MODEL_NOT_CONFIGURED", "模型未配置，请使用结构化表单", 503)
+        const interpreted = await bounded(signal => this.modelInterpreter!.interpret({ userMessage: input.message,
+          currentIntent: snapshot.intent, currentDraft: snapshot.requirementDraft,
+          context: (snapshot.messages ?? []).slice(0, -1).filter(m => !m.errorCode).slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 1500) })),
+        }, signal), this.modelTimeoutMs)
+        const checked = clarify(intentValue(interpreted.intent), draftValue(interpreted.requirementDraft))
+        const applied = this.repository.update(taskId, userId, task => {
+          if (task.requirementVersion !== snapshot.requirementVersion || task.conversationRevision !== snapshot.conversationRevision) throw new TaskError("MODEL_SUPERSEDED", "解释期间任务或对话已更新；旧解释已丢弃", 409)
+          this.applyInterpretation(task, checked)
+        })
+        // Same requirement with an existing result is reused. Tools remain deterministic.
+        const result = applied.status === "ready_to_search"
+          ? await this.search(taskId, userId, randomUUID(), applied.requirementVersion) : applied
+        if (result.requirementVersion !== applied.requirementVersion || result.conversationRevision !== snapshot.conversationRevision) throw new TaskError("MODEL_SUPERSEDED", "任务已更新；请查看当前版本结果", 409)
+        reply = result.status === "needs_clarification" ? result.clarificationQuestions.join("\n")
+          : result.status === "result_ready" ? "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。"
+          : result.status === "needs_verification" ? "ShoppingStub 缺少关键事实，需要核验；未执行购买。"
+          : result.status === "no_match" ? "ShoppingStub 没有符合条件的方案。"
+          : result.status === "failed" ? "ShoppingStub 调用失败，请查看错误码；未执行购买。"
+          : "当前版本正在搜索，请等待结果。"
+      } catch (error) {
+        const safe = error instanceof TaskError ? error : new TaskError("MODEL_UNAVAILABLE", "模型处理失败，原需求未修改")
+        errorCode = safe.code === "TIMEOUT" ? "MODEL_TIMEOUT" : safe.code
+        reply = safe.code === "TIMEOUT" ? "模型请求超时，原需求未修改；可重试或使用表单。" : safe.message
+      }
+      return this.repository.update(taskId, userId, task => {
+        task.messages ??= []
+        task.messages.push({ requestId: input.requestId, role: "assistant", content: reply, at: new Date().toISOString(), ...(errorCode ? { errorCode } : {}) })
+        event(task, errorCode ? "message_error" : "message_answered", errorCode ?? "需求理解和工具处理完成；回复由服务端任务事实生成")
       })
     })
   }

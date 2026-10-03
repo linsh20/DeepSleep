@@ -21,8 +21,16 @@ export type MainTask = Interpretation & {
   requirement: Requirement | null
   status: TaskStatus
   shoppingResult: ShoppingPortResult | null
+  conversationRevision?: number
+  messages?: { requestId: string; role: "user" | "assistant"; content: string; at: string; errorCode?: string }[]
   events: { sequence: number; at: string; requirementVersion: number; type: string; detail: string }[]
 }
+const taskErrorBrand = Symbol.for("deepsleep.task-error")
 export class TaskError extends Error {
+  readonly [taskErrorBrand] = true
+  // Next route bundles can load separate class identities while sharing the in-memory runtime.
+  static [Symbol.hasInstance](value: unknown): boolean {
+    return typeof value === "object" && value !== null && (value as Record<symbol, unknown>)[taskErrorBrand] === true
+  }
   constructor(public code: string, message: string, public httpStatus = 400) { super(message) }
 }

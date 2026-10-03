@@ -5,6 +5,7 @@ import type { Interpretation, RequirementDraft, TaskIntent } from "./types"
 export interface RequirementInterpreter {
   interpret(input: {
     userMessage: string
+    currentIntent?: TaskIntent
     currentDraft: RequirementDraft
     context: { role: "user" | "assistant"; content: string }[]
     developmentInput?: { intent: TaskIntent; requirementDraft: RequirementDraft }
@@ -63,7 +64,7 @@ export function clarify(intent: TaskIntent, requirementDraft: RequirementDraft):
   need("category", requirementDraft.category, "请填写商品类别。")
   need("query", requirementDraft.query, "请填写商品名称及所需品牌、色号、容量、正装或补充装。")
   need("currency", requirementDraft.currency, "请明确币种（本轮支持 HKD）。")
-  need("budget.maxMinor", requirementDraft.budget?.maxMinor, "预算上限是多少港仙？HKD 180 = 18000 港仙。")
+  need("budget.maxMinor", requirementDraft.budget?.maxMinor, "预算上限是多少港币（HKD 元）？")
   need("budget.scope", requirementDraft.budget?.scope, "预算是商品金额还是含运费总额？")
   need("quantity", requirementDraft.quantity, "需要多少件？")
   need("destination", requirementDraft.destination, "配送地区是什么？无需填写详细地址。")

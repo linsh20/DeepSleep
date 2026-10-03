@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { hkdToMinor, minorToHKD } from "@/services/main-agent/money"
+import type { ModelConnection } from "@/services/main-agent/model-interpreter"
 import type { MainTask } from "@/services/main-agent/types"
 
 type Command = { path: string; body: Record<string, unknown> }
@@ -11,12 +13,16 @@ async function request(path: string, body?: Record<string, unknown>) {
   const response = await fetch(`/api/agent/${path}`, body ? {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
   } : { cache: "no-store" })
-  const data = await response.json()
+  let data
+  try { data = await response.json() } catch { throw new Error("服务暂时未返回有效 JSON，请刷新任务后重试") }
   if (!response.ok) throw new Error(`${data.error?.code}: ${data.error?.message}`)
-  return data as { task?: MainTask }
+  return data as { task?: MainTask; model?: ModelConnection }
 }
 export function AgentDebug() {
   const [task, setTask] = useState<MainTask | null>(null)
+  const [model, setModel] = useState<ModelConnection | null>(null)
+  const [chatBusy, setChatBusy] = useState(false)
+  const [message, setMessage] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState("")
   const [lastCommand, setLastCommand] = useState<Command | null>(null)
@@ -26,7 +32,10 @@ export function AgentDebug() {
     currentId.current = next.taskId
     setTask(old => old && old.events.length > next.events.length ? old : next)
   }, [])
-  const refresh = useCallback(async (id: string) => { accept((await request(`tasks/${id}`)).task) }, [accept])
+  const refresh = useCallback(async (id: string) => {
+    accept((await request(`tasks/${id}`)).task)
+    const info = await request("model"); if (info.model) setModel(info.model)
+  }, [accept])
   const taskId = task?.taskId
   useEffect(() => {
     if (!taskId) return
@@ -43,6 +52,7 @@ export function AgentDebug() {
     setBusy(true); setError("")
     try {
       await request("session", {})
+      const info = await request("model"); if (info.model) setModel(info.model)
       const command = { path: "tasks", body: { requestId: crypto.randomUUID() } }
       setLastCommand(command)
       const result = await request(command.path, command.body)
@@ -58,9 +68,20 @@ export function AgentDebug() {
       await send({ path: `tasks/${task.taskId}/requirements`, body: {
         requestId: crypto.randomUUID(), expectedVersion: task.requirementVersion, intent: val("intent"),
         requirementDraft: { category: val("category"), query: val("query"), currency: val("currency"), destination: val("destination"),
-          quantity: num("quantity"), budget: { maxMinor: num("maxMinor"), scope: val("scope") } },
+          quantity: num("quantity"), budget: { maxMinor: val("maxHKD") === "" ? undefined : hkdToMinor(val("maxHKD")), scope: val("scope") } },
       } })
-    } catch (e) { setError(String(e)); void refresh(task.taskId) } finally { setBusy(false) }
+    } catch (e) { setError(String(e)); void refresh(task.taskId).catch(() => {}) } finally { setBusy(false) }
+  }
+  async function chat() {
+    if (!task || !message.trim()) return
+    setChatBusy(true); setError("")
+    const outgoing = message
+    try {
+      await send({ path: "messages", body: { requestId: crypto.randomUUID(), taskId: task.taskId, expectedVersion: task.requirementVersion, message: outgoing } })
+      setMessage(current => current === outgoing ? "" : current)
+      await refresh(task.taskId)
+    } catch (e) { setError(String(e)); void refresh(task.taskId).catch(() => {}) }
+    finally { setChatBusy(false) }
   }
   async function run() {
     if (!task) return
@@ -71,21 +92,32 @@ export function AgentDebug() {
   }
   return <main className="mx-auto w-full max-w-4xl space-y-5 p-6">
     <h1 className="text-2xl font-semibold">DeepSleep 主 Agent 调试</h1>
-    <p>开发输入模式：模型尚未接入，请通过表单明确填写和修正需求。ShoppingStub 全部为开发模拟，未核验真实商品。</p>
+    <p>自然语言对话使用真实模型理解需求；结构化表单可单独调试和修正。ShoppingStub 仍为 development_mock，未核验真实商品。</p>
     <p>仅供本地单进程开发；内存数据在进程重启后丢失，不用于授权、预算或支付去重。购买执行尚未接入。</p>
     <Button onClick={start} disabled={busy}>开始新任务</Button>
     {error && <p role="alert" className="text-destructive">{error}</p>}
+    {model && <p>模型 {model.model}：{({ missing_config: "未配置：请在服务端 .env.local 填写 LLM_API_KEY 并重启", untested: "已配置，尚未验证连接", connected: "最近一次真实模型请求连接成功", error: "最近一次真实模型请求失败" })[model.state]}{model.checkedAt ? `（${model.checkedAt}）` : ""}{model.code ? ` · ${model.code}` : ""}</p>}
     {task && <>
-      <Card><CardHeader><CardTitle>结构化需求输入</CardTitle></CardHeader><CardContent>
-        <form onSubmit={event => { event.preventDefault(); void save(new FormData(event.currentTarget)) }} className="grid gap-4 sm:grid-cols-2" key={task.taskId}>
-          <label>意图<select name="intent" className="block w-full rounded border p-2" defaultValue="unclear"><option value="unclear">尚未明确</option><option value="compare">比较方案</option><option value="purchase">购买任务（不执行）</option></select></label>
-          <label>类别<Input name="category" placeholder="例如：化妆品" /></label>
-          <label className="sm:col-span-2">商品与规格<Input name="query" placeholder="填写品牌、商品、色号、容量及正装/补充装" /></label>
-          <label>币种<select name="currency" defaultValue="" className="block w-full rounded border p-2"><option value="">请选择</option><option value="HKD">HKD</option></select></label>
-          <label>预算上限（港仙，HKD 180 = 18000）<Input name="maxMinor" type="number" min="1" step="1" /></label>
-          <label>预算口径<select name="scope" defaultValue="" className="block w-full rounded border p-2"><option value="">请选择</option><option value="item">商品金额</option><option value="delivered">含运费总额</option></select></label>
-          <label>数量<Input name="quantity" type="number" min="1" max="100" step="1" /></label>
-          <label>配送地区<Input name="destination" placeholder="例如：香港" /></label>
+      <Card><CardHeader><CardTitle>自然语言对话模式</CardTitle></CardHeader><CardContent className="space-y-3">
+        <p>模型仅理解需求；澄清和结果回复由服务端根据任务事实生成。请勿输入密钥或支付信息。</p>
+        <ol aria-label="对话消息" className="space-y-3">{(task.messages ?? []).map(m => <li key={`${m.requestId}-${m.role}`} className="whitespace-pre-wrap rounded border p-3">
+          <strong>{m.role === "user" ? "你" : "助手"}：</strong>{m.content}{m.errorCode && <p role="alert" className="text-destructive">{m.errorCode}</p>}
+        </li>)}</ol>
+        <form onSubmit={event => { event.preventDefault(); void chat() }} className="space-y-2">
+          <label>消息<Input value={message} onChange={e => setMessage(e.target.value)} maxLength={2000} placeholder="例如：帮我看看粉底，或预算改成 180，其他不变" /></label>
+          <Button type="submit" disabled={busy || chatBusy || !message.trim()}>{chatBusy ? "正在理解需求…" : "发送消息"}</Button>
+        </form>
+      </CardContent></Card>
+      <Card><CardHeader><CardTitle>结构化表单模式（调试与修正）</CardTitle></CardHeader><CardContent>
+        <form onSubmit={event => { event.preventDefault(); void save(new FormData(event.currentTarget)) }} className="grid gap-4 sm:grid-cols-2" key={`${task.taskId}-${task.requirementVersion}`}>
+          <label>意图<select name="intent" className="block w-full rounded border p-2" defaultValue={task.intent}><option value="unclear">尚未明确</option><option value="compare">比较方案</option><option value="purchase">购买任务（不执行）</option></select></label>
+          <label>类别<Input name="category" defaultValue={task.requirementDraft.category ?? ""} placeholder="例如：化妆品" /></label>
+          <label className="sm:col-span-2">商品与规格<Input name="query" defaultValue={task.requirementDraft.query ?? ""} placeholder="填写品牌、商品、色号、容量及正装/补充装" /></label>
+          <label>币种<select name="currency" defaultValue={task.requirementDraft.currency ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="HKD">HKD</option></select></label>
+          <label>预算上限（HKD 元）<Input name="maxHKD" type="number" min="0.01" step="0.01" defaultValue={task.requirementDraft.budget?.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : ""} /></label>
+          <label>预算口径<select name="scope" defaultValue={task.requirementDraft.budget?.scope ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="item">商品金额</option><option value="delivered">含运费总额</option></select></label>
+          <label>数量<Input name="quantity" defaultValue={task.requirementDraft.quantity ?? ""} type="number" min="1" max="100" step="1" /></label>
+          <label>配送地区<Input name="destination" defaultValue={task.requirementDraft.destination ?? ""} placeholder="例如：香港" /></label>
           <Button type="submit" disabled={busy}>保存需求并校验</Button>
         </form>
       </CardContent></Card>
@@ -99,7 +131,7 @@ export function AgentDebug() {
         <h2 className="font-semibold">缺失字段与澄清问题</h2>
         <p>{task.missingFields.join("、") || "无缺失字段"}</p>
         <ul>{task.clarificationQuestions.map(q => <li key={q}>{q}</li>)}</ul>
-        <h2 className="font-semibold">当前需求草稿</h2><pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft, null, 2)}</pre>
+        <h2 className="font-semibold">当前需求草稿</h2><pre className="overflow-auto text-sm">{JSON.stringify({ ...task.requirementDraft, budget: task.requirementDraft.budget ? { maxHKD: task.requirementDraft.budget.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : null, scope: task.requirementDraft.budget.scope } : undefined }, null, 2)}</pre>
         <h2 className="font-semibold">ShoppingStub 结果（开发模拟 / 未核验）</h2>
         <pre className="overflow-auto whitespace-pre-wrap text-sm">{task.shoppingResult ? JSON.stringify(task.shoppingResult, null, 2) : "尚无当前版本结果"}</pre>
       </CardContent></Card>
