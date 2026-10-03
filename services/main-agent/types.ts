@@ -3,7 +3,7 @@ import type { ShoppingPortResult } from "./shopping-port"
 
 // Main-agent-only types. Canonical shared Requirement stays in types/index.ts.
 export type TaskIntent = "compare" | "purchase" | "unclear"
-export type RequirementDraft = Partial<Pick<Requirement, "category" | "query" | "currency" | "destination">> & {
+export type RequirementDraft = Partial<Pick<Requirement, "category" | "query" | "currency" | "destination" | "hardConstraints" | "preferences" | "excludedProductIds" | "allowAlternativeProducts">> & {
   budget?: Partial<Requirement["budget"]>
   quantity?: number
 }
@@ -21,6 +21,7 @@ export type MainTask = Interpretation & {
   requirement: Requirement | null
   status: TaskStatus
   shoppingResult: ShoppingPortResult | null
+  shoppingRequest?: import("./shopping-port").ShoppingPortInput | null
   conversationRevision?: number
   messages?: { requestId: string; role: "user" | "assistant"; content: string; at: string; errorCode?: string }[]
   events: { sequence: number; at: string; requirementVersion: number; type: string; detail: string }[]

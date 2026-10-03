@@ -1,3 +1,4 @@
+import { constraintsValue, preferencesValue, stringList, checkConflicts, withoutPromotedPreferences } from "./conditions"
 import type { Requirement } from "../../types/index"
 import { TaskError } from "./types"
 import type { Interpretation, RequirementDraft, TaskIntent } from "./types"
@@ -25,7 +26,7 @@ export function intentValue(value: unknown): TaskIntent {
 }
 export function draftValue(value: unknown): RequirementDraft {
   const source = object(value)
-  keys(source, ["category", "query", "currency", "destination", "budget", "quantity"])
+  keys(source, ["category", "query", "currency", "destination", "budget", "quantity", "hardConstraints", "preferences", "excludedProductIds", "allowAlternativeProducts"])
   const draft: RequirementDraft = {}
   for (const key of ["category", "query", "currency", "destination"] as const) {
     const v = source[key]
@@ -52,6 +53,18 @@ export function draftValue(value: unknown): RequirementDraft {
     }
     if (Object.keys(budget).length) draft.budget = budget
   }
+  if (source.hardConstraints !== undefined) {
+    draft.hardConstraints = constraintsValue(source.hardConstraints)
+    checkConflicts(draft.hardConstraints)
+  }
+  if (source.preferences !== undefined) draft.preferences = withoutPromotedPreferences(draft.hardConstraints ?? [], preferencesValue(source.preferences))
+  if (source.excludedProductIds !== undefined) draft.excludedProductIds = stringList(source.excludedProductIds).sort()
+  if (source.allowAlternativeProducts !== undefined) {
+    if (typeof source.allowAlternativeProducts !== "boolean") throw new TaskError("INVALID_INPUT", "allowAlternativeProducts 须为布尔值")
+    draft.allowAlternativeProducts = source.allowAlternativeProducts
+  }
+  // A category is already a usable recall query; optional product details are not prerequisites.
+  if (!draft.query && draft.category) draft.query = draft.category
   return draft
 }
 export function clarify(intent: TaskIntent, requirementDraft: RequirementDraft): Interpretation {
@@ -62,7 +75,7 @@ export function clarify(intent: TaskIntent, requirementDraft: RequirementDraft):
   }
   need("intent", intent !== "unclear", "你希望比较方案，还是提出购买任务？本轮均不执行购买。")
   need("category", requirementDraft.category, "请填写商品类别。")
-  need("query", requirementDraft.query, "请填写商品名称及所需品牌、色号、容量、正装或补充装。")
+  need("query", requirementDraft.query, "请说明希望搜索的商品。")
   need("currency", requirementDraft.currency, "请明确币种（本轮支持 HKD）。")
   need("budget.maxMinor", requirementDraft.budget?.maxMinor, "预算上限是多少港币（HKD 元）？")
   need("budget.scope", requirementDraft.budget?.scope, "预算是商品金额还是含运费总额？")
@@ -78,7 +91,8 @@ export function completeRequirement(value: Interpretation, taskId: string, requi
   return { taskId, requirementVersion, category: draft.category, query: draft.query,
     currency: draft.currency, destination: draft.destination,
     budget: { maxMinor: draft.budget.maxMinor, scope: draft.budget.scope },
-    hardConstraints: [], preferences: [], excludedProductIds: [] }
+    hardConstraints: draft.hardConstraints ?? [], preferences: draft.preferences ?? [], excludedProductIds: draft.excludedProductIds ?? [],
+    ...(draft.allowAlternativeProducts !== undefined ? { allowAlternativeProducts: draft.allowAlternativeProducts } : {}) }
 }
 
 // Explicit form adapter; no model, keyword inference, or canned model replies.

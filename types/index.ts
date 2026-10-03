@@ -1,12 +1,15 @@
-export type ConstraintOperator = "lte" | "gte" | "eq" | "in" | "notIn"
+export type ConstraintOperator = "lte" | "gte" | "eq" | "in" | "notIn" | "containsAny" | "notContainsAny"
 
 export type Constraint = {
+  id?: string
   field: string
   op: ConstraintOperator
   value: number | string | boolean | string[]
 }
 
 export type Preference = {
+  id?: string
+  conditions?: Constraint[]
   field: string
   weight: number
   source: "explicit" | "inferred"
@@ -25,6 +28,7 @@ export type Requirement = {
   hardConstraints: Constraint[]
   preferences: Preference[]
   excludedProductIds: string[]
+  allowAlternativeProducts?: boolean
   destination?: string
 }
 

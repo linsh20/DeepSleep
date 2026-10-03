@@ -67,7 +67,7 @@ export function AgentDebug() {
     try {
       await send({ path: `tasks/${task.taskId}/requirements`, body: {
         requestId: crypto.randomUUID(), expectedVersion: task.requirementVersion, intent: val("intent"),
-        requirementDraft: { category: val("category"), query: val("query"), currency: val("currency"), destination: val("destination"),
+        requirementDraft: { ...task.requirementDraft, category: val("category"), query: val("query"), currency: val("currency"), destination: val("destination"),
           quantity: num("quantity"), budget: { maxMinor: val("maxHKD") === "" ? undefined : hkdToMinor(val("maxHKD")), scope: val("scope") } },
       } })
     } catch (e) { setError(String(e)); void refresh(task.taskId).catch(() => {}) } finally { setBusy(false) }
@@ -112,7 +112,7 @@ export function AgentDebug() {
         <form onSubmit={event => { event.preventDefault(); void save(new FormData(event.currentTarget)) }} className="grid gap-4 sm:grid-cols-2" key={`${task.taskId}-${task.requirementVersion}`}>
           <label>意图<select name="intent" className="block w-full rounded border p-2" defaultValue={task.intent}><option value="unclear">尚未明确</option><option value="compare">比较方案</option><option value="purchase">购买任务（不执行）</option></select></label>
           <label>类别<Input name="category" defaultValue={task.requirementDraft.category ?? ""} placeholder="例如：化妆品" /></label>
-          <label className="sm:col-span-2">商品与规格<Input name="query" defaultValue={task.requirementDraft.query ?? ""} placeholder="填写品牌、商品、色号、容量及正装/补充装" /></label>
+          <label className="sm:col-span-2">商品与规格<Input name="query" defaultValue={task.requirementDraft.query ?? ""} placeholder="商品名称或类别；其他条件按需补充" /></label>
           <label>币种<select name="currency" defaultValue={task.requirementDraft.currency ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="HKD">HKD</option></select></label>
           <label>预算上限（HKD 元）<Input name="maxHKD" type="number" min="0.01" step="0.01" defaultValue={task.requirementDraft.budget?.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : ""} /></label>
           <label>预算口径<select name="scope" defaultValue={task.requirementDraft.budget?.scope ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="item">商品金额</option><option value="delivered">含运费总额</option></select></label>
@@ -132,6 +132,14 @@ export function AgentDebug() {
         <p>{task.missingFields.join("、") || "无缺失字段"}</p>
         <ul>{task.clarificationQuestions.map(q => <li key={q}>{q}</li>)}</ul>
         <h2 className="font-semibold">当前需求草稿</h2><pre className="overflow-auto text-sm">{JSON.stringify({ ...task.requirementDraft, budget: task.requirementDraft.budget ? { maxHKD: task.requirementDraft.budget.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : null, scope: task.requirementDraft.budget.scope } : undefined }, null, 2)}</pre>
+        <h2 className="font-semibold">硬条件（只读）</h2>
+        <pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft.hardConstraints ?? [], null, 2)}</pre>
+        <h2 className="font-semibold">偏好及相对权重（只读）</h2>
+        <pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft.preferences ?? [], null, 2)}</pre>
+        <p>预算 {task.requirementDraft.budget?.maxMinor ? `${minorToHKD(task.requirementDraft.budget.maxMinor)} HKD` : "未指定"} · {task.requirementDraft.budget?.scope === "delivered" ? "含运费总额" : "商品金额"} · 数量 {task.requirementDraft.quantity ?? "未指定"} · 配送 {task.requirementDraft.destination ?? "未指定"}</p>
+        <p>条件可通过聊天修改；此表单保存其他字段时保留条件。Stub 不判断真实商品是否满足条件，文本匹配不证明功效。</p>
+        <h2 className="font-semibold">实际传给 ShoppingPort 的请求（港仙；无对话或凭据）</h2>
+        <pre className="overflow-auto text-sm">{task.shoppingRequest ? JSON.stringify(task.shoppingRequest, null, 2) : "当前版本尚未发送请求"}</pre>
         <h2 className="font-semibold">ShoppingStub 结果（开发模拟 / 未核验）</h2>
         <pre className="overflow-auto whitespace-pre-wrap text-sm">{task.shoppingResult ? JSON.stringify(task.shoppingResult, null, 2) : "尚无当前版本结果"}</pre>
       </CardContent></Card>

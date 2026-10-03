@@ -72,8 +72,8 @@ export class MainTaskOrchestrator {
   private modelTimeoutMs: number
   constructor(private repository: TaskRepository, private interpreter: RequirementInterpreter, private shopping: ShoppingPort, options: { timeoutMs?: number; retries?: number; modelInterpreter?: RequirementInterpreter; modelTimeoutMs?: number } = {}) {
     this.modelInterpreter = options.modelInterpreter
-    this.modelTimeoutMs = options.modelTimeoutMs ?? 20000
-    if (!Number.isSafeInteger(this.modelTimeoutMs) || this.modelTimeoutMs < 1 || this.modelTimeoutMs > 30000) throw new TaskError("INVALID_INPUT", "模型超时配置无效")
+    this.modelTimeoutMs = options.modelTimeoutMs ?? 60000
+    if (!Number.isSafeInteger(this.modelTimeoutMs) || this.modelTimeoutMs < 1 || this.modelTimeoutMs > 60000) throw new TaskError("INVALID_INPUT", "模型超时配置无效")
     this.timeoutMs = options.timeoutMs ?? 3000
     this.retries = options.retries ?? 1
     if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs < 1 || this.timeoutMs > 30000 || !Number.isInteger(this.retries) || this.retries < 0 || this.retries > 2) throw new TaskError("INVALID_INPUT", "调用限制无效")
@@ -114,6 +114,7 @@ export class MainTaskOrchestrator {
     Object.assign(task, checked)
     task.requirement = completeRequirement(checked, task.taskId, task.requirementVersion)
     task.shoppingResult = null
+    task.shoppingRequest = null
     event(task, "requirement_updated", "需求变化使旧版本结果失效")
     transition(task, task.requirement ? "ready_to_search" : "needs_clarification")
   }
@@ -172,6 +173,7 @@ export class MainTaskOrchestrator {
         if (task.status !== "ready_to_search" && task.status !== "failed") return
         if (!task.requirement || task.intent === "unclear") throw new TaskError("INVALID_INPUT", "需求尚未完整")
         task.shoppingResult = null
+        task.shoppingRequest = { requirement: structuredClone(task.requirement), quantity: task.requirementDraft.quantity! }
         transition(task, "shopping")
         started = true
       })

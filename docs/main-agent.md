@@ -1,3 +1,5 @@
+> 后续 Shopping 请求契约升级与最新真实验收见 [main-agent-contract.md](./main-agent-contract.md)。以下保留对应阶段的历史记录。
+
 # 主 Agent 任务骨架（开发模式）
 
 > 本文记录第一阶段基线。第二阶段新增的真实模型适配、聊天接口和 HKD 元界面见 [模型接入说明](main-agent-model.md)；下文“未接入模型”及旧页面港仙输入说明仅指第一阶段。

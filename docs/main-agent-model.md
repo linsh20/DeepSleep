@@ -1,3 +1,5 @@
+> 后续 Shopping 请求契约升级与最新真实验收见 [main-agent-contract.md](./main-agent-contract.md)。以下保留对应阶段的历史记录。
+
 # 第二阶段：真实模型需求理解与 ShoppingStub
 
 第一阶段提交 `47c4a87` 保留。本轮分支从该提交延续，不合并其他分支。现有状态转换表、TaskRepository、ShoppingStub 保持使用；没有真实 Shopping、授权、订单或支付。
