@@ -64,7 +64,7 @@ HTTP 入口为 `POST /api/products/search`，请求体就是上述结构。响�
 ## Watsons 数据映射
 
 - 只查询 `category_status = confirmed_face_treatment`；原始 355 条中的 2 条泛类目和 4 条不一致/缺失类目不会进入搜索。
-- `price.value` 转成 HKD 整数分，`elabOldPrice - price` 仅记录快照折扣；会员、件数和其他条件促销不假定可用。
+- `price.value` 转成 HKD 整数分，作为已经折扣后的展示单价；原价另存 `attributes.listPriceMinor`。`offer.discountMinor` 保持未知，等待针对本次订单核实额外优惠，避免再次扣除“原价减现价”。会员、件数和其他条件促销不假定可用。
 - 容量优先比较 `elabPackSize`、variant 单位和标题。多个容量、组合装或来源冲突一律为 `null`。
 - 评分只有在评论数大于零时才采用；销量缺失保持 `null`，不使用零代替。
 - HTML 描述只保留纯文本，`N/A` 成分转为 `null`。相对商品链接固定解析到 Watsons 香港 HTTPS 域名。

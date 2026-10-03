@@ -259,6 +259,10 @@ function normalizeProduct(raw: RawProduct, warnings: string[]): Candidate {
   validateCanonicalNumber(attributes, "volumeMl", (value) => Number.isSafeInteger(value) && value >= 0, raw.productId, warnings)
   validateCanonicalNumber(attributes, "rating", (value) => value >= 0 && value <= 5, raw.productId, warnings)
   validateCanonicalNumber(attributes, "salesCount", (value) => Number.isSafeInteger(value) && value >= 0, raw.productId, warnings)
+  // B needs attributable category/title facts, not provenance guessed from another field.
+  attributes.category = fact(raw.category)
+  attributes.productName = fact(raw.title)
+  if (!attributes.brand && searchableText.brand) attributes.brand = { ...searchableText.brand }
 
   let offer: Candidate["offer"] = null
   if (raw.offer !== null) {

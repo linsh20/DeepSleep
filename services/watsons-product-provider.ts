@@ -163,12 +163,14 @@ function mapWatsonsProduct(row: WatsonsProductRow, fetchedAt: string): RawProduc
       rating,
       reviewCount,
       salesCount,
+      listPriceMinor: listPrice,
     },
     offer: {
       currency: "HKD",
       itemPriceMinor: price,
       shippingMinor: null,
-      discountMinor: listPrice !== null && listPrice > price ? listPrice - price : 0,
+      // itemPriceMinor is already the displayed sale price. Checkout discounts are unknown.
+      discountMinor: null,
       stock,
       deliverable: null,
     },
