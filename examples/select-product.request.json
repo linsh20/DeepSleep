@@ -6,7 +6,7 @@
     "product_name": { "value": "lotion", "aliases": ["乳液"], "must": 1 },
     "range_conditions": [
       { "field": "volumeMl", "min": 100, "max": 300, "must": 1 },
-      { "field": "priceMinor", "min": 10000, "max": 30000, "must": 0 }
+      { "field": "priceHkd", "min": 100, "max": 300, "must": 0 }
     ],
     "include_keywords": [
       { "keywords": ["sensitive skin"], "must": 1 },

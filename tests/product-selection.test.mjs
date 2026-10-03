@@ -1,6 +1,7 @@
 import assert from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
+import { DatabaseSync } from "node:sqlite"
 import test from "node:test"
 import ts from "typescript"
 
@@ -11,11 +12,9 @@ requireTS.extensions[".ts"] = (module, filename) => {
   })
   module._compile(outputText, filename)
 }
-const { createProductSelection } = requireTS("../services/product-selection.ts")
+const { createProductSelection, selectProduct } = requireTS("../services/product-selection.ts")
 const { createProductSearch } = requireTS("../services/product-search.ts")
 const { MockProductProvider } = requireTS("../services/product-provider.ts")
-const { POST } = requireTS("../app/api/products/select/route.ts")
-const { productSelectionResponse } = requireTS("../lib/product-selection-http.ts")
 const request = () => JSON.parse(readFileSync(new URL("../examples/select-product.request.json", import.meta.url), "utf8"))
 const fact = value => ({ value, source: "mock-dataset", status: "mock", fetchedAt: "2026-10-03T08:00:00Z" })
 function ranked(id, rank, ingredients, volume = 200) {
@@ -41,8 +40,11 @@ test("level 1 skips hard failures and unknowns despite score 5, preserving facts
   assert.equal(result.status, "ready")
   assert.equal(result.selection.candidate.productId, "pass")
   assert.equal(result.selection.quantity, 2)
-  assert.equal(result.selection.candidate.offer.shippingMinor.value, null)
-  assert.equal(result.selection.candidate.offer.itemPriceMinor.status, "mock")
+  assert.equal(result.selection.candidate.offer.shippingHkd.value, null)
+  assert.equal(result.selection.candidate.offer.priceHkd.value, 150)
+  assert.equal(result.selection.candidate.offer.priceHkd.status, "mock")
+  assert.equal(result.selection.candidate.databaseCode, null)
+  assert.equal("url" in result.selection.candidate, false)
   assert.deepEqual(result.reviews.map(r => r.status), ["rejected", "needs_verification", "passed"])
   assert.ok(!JSON.stringify(result).includes("private debug data"))
   assert.deepEqual(input, before)
@@ -90,40 +92,82 @@ test("no match, partial usable search, failed source and stale versions remain d
   }
 })
 
-test("invalid requests are 400 and never reach the source", async () => {
+test("invalid function arguments never reach the source", async () => {
   const select = createProductSelection(async () => { assert.fail("must not search") })
   for (const input of [null, {}, { ...request(), quantity: 0 }, { ...request(), quantity: 1.5 },
     { ...request(), destination: 12 }, { ...request(), excludedCandidates: [{}] },
     { ...request(), searchInput: { ...request().searchInput, product_name: { value: "lotion", must: 0 } } }]) {
-    const response = await productSelectionResponse(new Request("http://localhost", {
-      method: "POST", body: JSON.stringify(input),
-    }), select)
-    assert.equal(response.status, 400)
-    assert.equal((await response.json()).selection, null)
+    const result = await select(input)
+    assert.equal(result.error.code, "INVALID_INPUT")
+    assert.equal(result.selection, null)
   }
-  assert.equal((await POST(new Request("http://localhost", { method: "POST", body: "{" }))).status, 400)
 })
 
-test("documented request runs through real mock search and HTTP handler", async () => {
+test("documented function call runs through mock search with HKD amounts", async () => {
   const { searchProducts } = createProductSearch(new MockProductProvider())
   const select = createProductSelection(searchProducts)
-  const response = await productSelectionResponse(new Request("http://localhost", {
-    method: "POST", body: JSON.stringify(request()),
-  }), select)
-  assert.equal(response.status, 200)
-  assert.equal(response.headers.get("Cache-Control"), "no-store")
-  const result = await response.json()
+  const result = await select(request())
   assert.equal(result.status, "ready")
   assert.equal(result.selection.searchInput.taskId, result.taskId)
-  assert.equal(result.selection.candidate.offer.itemPriceMinor.source, "mock-dataset")
-  assert.equal(result.selection.candidate.offer.itemPriceMinor.status, "mock")
+  assert.equal(result.selection.candidate.offer.priceHkd.source, "mock-dataset")
+  assert.equal(result.selection.candidate.offer.priceHkd.status, "mock")
 })
 
-test("documented request also runs through the real Watsons route without LLM credentials", async () => {
-  const response = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify(request()) }))
-  assert.equal(response.status, 200)
-  const result = await response.json()
-  assert.equal(result.status, "ready")
-  assert.ok(result.selection.candidate.productId.startsWith("watsons-product:"))
-  assert.equal(result.selection.candidate.offer.shippingMinor.value, null)
+test("direct function reads Watsons DB without network, and hands off its database code and HKD price", async () => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = () => { assert.fail("No HTTP needed for this function call") }
+  try {
+    const result = await selectProduct(request())
+    assert.equal(result.status, "ready")
+    const product = result.selection.candidate
+    assert.ok(product.productId.startsWith("watsons-product:"))
+    assert.equal(product.offer.shippingHkd.value, null)
+    assert.equal("url" in product, false)
+    assert.ok(!JSON.stringify(result).includes("Minor"))
+    const db = new DatabaseSync("data/watson/data/products.db", { readOnly: true })
+    try {
+      const row = db.prepare("SELECT code, price FROM products WHERE code = ?").get(product.databaseCode)
+      assert.equal(row.code, product.databaseCode)
+      assert.equal(row.price, product.offer.priceHkd.value)
+    } finally { db.close() }
+  } finally { globalThis.fetch = originalFetch }
+})
+
+test("HKD decimal bounds convert exactly; no public amount, evidence path or reason uses cents", async () => {
+  const input = request()
+  input.searchInput.range_conditions = [{ field: "priceHkd", min: 19.9, max: 20.05, must: 1 }]
+  const row = ranked("decimal", 1, "water")
+  row.candidate.offer.itemPriceMinor = fact(1990)
+  row.candidate.offer.shippingMinor = fact(0)
+  row.candidate.offer.discountMinor = fact(105)
+  row.candidate.attributes.listPriceMinor = fact(2900)
+  const before = structuredClone(input)
+  const result = await createProductSelection(async value => {
+    assert.deepEqual(value.range_conditions, [{ field: "priceMinor", min: 1990, max: 2005, must: 1 }])
+    return source([row])(value)
+  })(input)
+  assert.equal(result.selection.candidate.offer.priceHkd.value, 19.9)
+  assert.equal(result.selection.candidate.offer.shippingHkd.value, 0)
+  assert.equal(result.selection.candidate.offer.discountHkd.value, 1.05)
+  assert.equal(result.selection.candidate.attributes.listPriceHkd.value, 29)
+  assert.ok(!JSON.stringify(result).includes("Minor"))
+  assert.match(result.selection.productCheck.checks[1].reason, /HKD 19\.90/)
+  assert.deepEqual(input, before)
+
+  row.candidate.offer.itemPriceMinor = fact(2006)
+  assert.equal((await createProductSelection(source([row]))(input)).status, "no_match")
+  input.searchInput.range_conditions[0].min = null
+  assert.equal((await createProductSelection(source([row]))(input)).status, "no_match")
+})
+
+test("reject sub-cent, nonfinite, negative and legacy-cent input rather than guessing currency units", async () => {
+  const select = createProductSelection(async () => { assert.fail("must not search") })
+  for (const value of [1.005, -1, NaN, Infinity, "100", undefined]) {
+    const input = request()
+    input.searchInput.range_conditions = [{ field: "priceHkd", min: value, max: 300, must: 1 }]
+    assert.equal((await select(input)).error.code, "INVALID_INPUT")
+  }
+  const input = request()
+  input.searchInput.range_conditions = [{ field: "priceMinor", min: 10000, max: 30000, must: 1 }]
+  assert.equal((await select(input)).error.code, "INVALID_INPUT")
 })

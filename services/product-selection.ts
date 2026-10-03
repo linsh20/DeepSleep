@@ -1,5 +1,5 @@
 import type {
-  ProductConditionCheck, ProductReview, RankedSearchResult, SelectProductRequest,
+  Candidate, HandoffProduct, ProductConditionCheck, ProductReview, RankedSearchResult, SelectProductRequest,
   SelectProductResult, StructuredSearchInput,
 } from "../types"
 import { assertStructuredSearchInput, searchProducts } from "./product-search"
@@ -17,8 +17,10 @@ export function createProductSelection(
         ? raw.searchInput.requirementVersion : 0,
       status: "failed", selection: null, searchStatus: "failed", reviews: [], warnings: [],
     }
+    let coreInput: StructuredSearchInput
     try {
-      assertStructuredSearchInput(raw?.searchInput)
+      coreInput = toCoreInput(raw)
+      assertStructuredSearchInput(coreInput)
       if (raw.searchInput.product_name.must !== 1 ||
           (raw.quantity !== undefined && (!Number.isSafeInteger(raw.quantity) || raw.quantity < 1)) ||
           (raw.destination != null && (typeof raw.destination !== "string" || !raw.destination.trim())) ||
@@ -36,7 +38,7 @@ export function createProductSelection(
 
     const request = structuredClone(raw)
     try {
-      const searchResult = await search(structuredClone(request.searchInput))
+      const searchResult = await search(coreInput)
       if (searchResult.taskId !== result.taskId || searchResult.requirementVersion !== result.requirementVersion) {
         result.error = { code: "SOURCE_UNAVAILABLE", message: "搜索结果的任务或需求版本不匹配。" }
         return result
@@ -50,7 +52,7 @@ export function createProductSelection(
       }
 
       const excluded = new Set((request.excludedCandidates ?? []).map(identityKey))
-      const conditions = buildScoringConditions(request.searchInput)
+      const conditions = buildScoringConditions(coreInput)
       // Reuse deterministic rules; a high LLM score is not evidence of a hard-condition match.
       for (const item of [...searchResult.candidates].sort((a, b) => a.rank - b.rank).slice(0, 10)) {
         const candidate = item.candidate
@@ -58,9 +60,13 @@ export function createProductSelection(
         const checks: ProductConditionCheck[] = conditions.map(condition => {
           const assessment = assessCondition(candidate, condition)
           return {
-            conditionId: condition.id, must: condition.must,
+            conditionId: publicField(condition.id), must: condition.must,
             outcome: assessment.state === "pass" ? "match" : assessment.state === "fail" ? "mismatch" : "unknown",
-            evidenceFields: assessment.evidenceFields, reason: assessment.reason,
+            evidenceFields: assessment.evidenceFields.map(publicField),
+            reason: condition.field === "priceMinor"
+              ? assessment.state === "unknown" ? "价格未知"
+                : `HKD ${(candidate.offer!.itemPriceMinor.value! / 100).toFixed(2)} ${assessment.state === "pass" ? "在" : "不在"}要求范围内`
+              : assessment.reason,
           }
         })
         const hard = checks.filter(check => check.must === 1)
@@ -76,7 +82,7 @@ export function createProductSelection(
         result.selection = {
           taskId: result.taskId, requirementVersion: result.requirementVersion,
           quantity: request.quantity ?? 1, destination: request.destination ?? null,
-          searchInput: request.searchInput, candidate: structuredClone(candidate),
+          searchInput: request.searchInput, candidate: toHandoffProduct(candidate),
           productCheck: { status: "passed", checkedAt: new Date().toISOString(), checks },
         }
         return result
@@ -92,3 +98,57 @@ export function createProductSelection(
 }
 
 export const selectProduct = createProductSelection()
+
+/** Keep existing search/payment modules' integer arithmetic private to this adapter. */
+function toCoreInput(request: SelectProductRequest): StructuredSearchInput {
+  const input = request?.searchInput
+  if (!input || !Array.isArray(input.range_conditions)) throw new Error("Invalid conditions")
+  return structuredClone({
+    ...input,
+    range_conditions: input.range_conditions.map(condition => {
+      if (!condition || !["priceHkd", "volumeMl"].includes(condition.field)) throw new Error("Invalid range field")
+      return {
+        ...condition,
+        field: condition.field === "priceHkd" ? "priceMinor" : "volumeMl",
+        min: condition.field === "priceHkd" ? toMinor(condition.min) : condition.min,
+        max: condition.field === "priceHkd" ? toMinor(condition.max) : condition.max,
+      }
+    }),
+  })
+}
+
+function toMinor(value: number | null): number | null {
+  if (value === null) return null
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0 ||
+      !/^\d+(?:\.\d{1,2})?$/.test(String(value)) || !Number.isSafeInteger(Math.round(value * 100))) {
+    throw new Error("Prices must be nonnegative HKD amounts with at most two decimals")
+  }
+  return Math.round(value * 100)
+}
+
+function publicField(field: string): string {
+  return field.replace(/itemPriceMinor|priceMinor/g, "priceHkd")
+    .replace(/shippingMinor/g, "shippingHkd").replace(/discountMinor/g, "discountHkd")
+    .replace(/listPriceMinor/g, "listPriceHkd")
+}
+
+function toHandoffProduct(candidate: Candidate): HandoffProduct {
+  const copy = structuredClone(candidate)
+  const amount = (fact: NonNullable<Candidate["offer"]>["itemPriceMinor"]) => ({
+    ...fact, value: fact.value === null ? null : fact.value / 100,
+  })
+  return {
+    productId: copy.productId, skuId: copy.skuId, offerId: copy.offerId,
+    databaseCode: copy.productId.startsWith("watsons-product:") ? copy.productId.slice("watsons-product:".length) : null,
+    title: copy.title, category: copy.category, searchableText: copy.searchableText,
+    attributes: Object.fromEntries(Object.entries(copy.attributes).map(([key, fact]) => [
+      publicField(key), key === "listPriceMinor"
+        ? { ...fact, value: typeof fact.value === "number" ? fact.value / 100 : null } : fact,
+    ])),
+    offer: copy.offer && {
+      currency: "HKD", priceHkd: amount(copy.offer.itemPriceMinor), shippingHkd: amount(copy.offer.shippingMinor),
+      discountHkd: amount(copy.offer.discountMinor), stock: copy.offer.stock, deliverable: copy.offer.deliverable,
+    },
+    missingFields: copy.missingFields.map(publicField),
+  }
+}

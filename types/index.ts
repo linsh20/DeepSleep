@@ -156,8 +156,18 @@ export type ProviderSearchResult<T> = {
 }
 
 // Hackathon integration: main agent -> search + product check -> payment risk.
+/** Public function input. Prices are HKD dollars, e.g. 100 = HKD 100. */
+export type ProductSelectionConditions = Omit<StructuredSearchInput, "range_conditions"> & {
+  range_conditions: {
+    field: "priceHkd" | "volumeMl"
+    min: number | null
+    max: number | null
+    must: MustFlag
+  }[]
+}
+
 export type SelectProductRequest = {
-  searchInput: StructuredSearchInput
+  searchInput: ProductSelectionConditions
   quantity?: number
   destination?: string | null
   /** Previously rejected exact offers; skip them when selecting from the top ten. */
@@ -171,14 +181,28 @@ export type ProductReview = ProductIdentity & {
   checks: ProductConditionCheck[]
 }
 
+/** Database facts for level 2. No URL; all monetary values use HKD dollars. */
+export type HandoffProduct = Omit<Candidate, "url" | "offer"> & {
+  /** products.code in the Watsons SQLite database; null for Mock products. */
+  databaseCode: string | null
+  offer: {
+    currency: "HKD"
+    priceHkd: Fact<number>
+    shippingHkd: Fact<number>
+    discountHkd: Fact<number>
+    stock: Fact<StockStatus>
+    deliverable: Fact<boolean>
+  } | null
+}
+
 /** Interface 2: exactly one product, never permission to pay or place an order. */
 export type ProductHandoff = {
   taskId: string
   requirementVersion: number
   quantity: number
   destination: string | null
-  searchInput: StructuredSearchInput
-  candidate: Candidate
+  searchInput: ProductSelectionConditions
+  candidate: HandoffProduct
   productCheck: {
     status: "passed"
     checkedAt: string
@@ -202,16 +226,34 @@ export type PaymentRiskAuthorization = {
   taskId: string
   requirementVersion: number
   userId: string
-  authorization: Authorization
+  authorization: {
+    authorizationId: string
+    allowedOfferId: string
+    /** HKD dollars, e.g. 300 = HKD 300, at most two decimal places. */
+    maxTotalHkd: number
+    maxQuantity: number
+    currency: "HKD"
+    expiresAt: string
+  }
   /** Opaque references only. Empty means no restriction within the user's available methods. */
   allowedPaymentMethodIds: string[]
   preferredPaymentMethodId: string | null
 }
 
-/** Contract for the external payment-risk service; no such HTTP handler is implemented here. */
+/** Arguments for the level-2 risk team's function. */
 export type PaymentRiskRequest = {
   selection: ProductHandoff
   userAuthorization: PaymentRiskAuthorization
+}
+
+export type PaymentRiskResult = {
+  taskId: string
+  requirementVersion: number
+  status: "approved" | "blocked" | "needs_verification"
+  offerId: string | null
+  totalHkd: number | null
+  currency: "HKD"
+  reasons: string[]
 }
 
 // Agent B contract; Candidate remains the existing Agent A search shape.
