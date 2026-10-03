@@ -1,31 +1,31 @@
-export type ConstraintOperator = "lte" | "gte" | "eq" | "in" | "notIn"
+export type MustFlag = 0 | 1
 
-export type Constraint = {
-  field: string
-  op: ConstraintOperator
-  value: number | string | boolean | string[]
+export type ProductNameCondition = {
+  value: string
+  must: MustFlag
 }
 
-export type Preference = {
-  field: string
-  weight: number
-  source: "explicit" | "inferred"
+export type RangeField = "priceMinor" | "volumeMl"
+
+export type RangeCondition = {
+  field: RangeField
+  min: number | null
+  max: number | null
+  must: MustFlag
 }
 
-export type Requirement = {
+export type KeywordCondition = {
+  keywords: string[]
+  must: MustFlag
+}
+
+export type StructuredSearchInput = {
   taskId: string
   requirementVersion: number
-  category: string
-  query: string
-  currency: string
-  budget: {
-    maxMinor: number
-    scope: "item" | "delivered"
-  }
-  hardConstraints: Constraint[]
-  preferences: Preference[]
-  excludedProductIds: string[]
-  destination?: string
+  product_name: ProductNameCondition
+  range_conditions: RangeCondition[]
+  include_keywords: KeywordCondition[]
+  exclude_keywords: KeywordCondition[]
 }
 
 export type FactStatus = "verified" | "unverified" | "mock"
@@ -46,9 +46,11 @@ export type Candidate = {
   offerId: string | null
   title: string
   url: string
+  category: string
+  searchableText: Record<string, Fact<string>>
   attributes: Record<string, Fact<AttributeValue>>
   offer: {
-    currency: string
+    currency: "HKD"
     itemPriceMinor: Fact<number>
     shippingMinor: Fact<number>
     discountMinor: Fact<number>
@@ -58,113 +60,74 @@ export type Candidate = {
   missingFields: string[]
 }
 
-export type SearchStatus = "complete" | "partial" | "failed"
-
-export type SearchResult = {
-  taskId: string
-  requirementVersion: number
-  candidates: Candidate[]
-  status: SearchStatus
-  warnings: string[]
-}
-
-export type VerificationRequest = {
-  productId: string
-  skuId: string | null
-  offerId: string | null
-  fields: string[]
-  reason: string
-}
-
-export type EvaluationRecommendation = {
-  productId: string
-  skuId: string | null
-  offerId: string | null
-  score: number
-  label: string
-  satisfied: string[]
-  tradeoffs: string[]
-  evidenceFields: string[]
-}
-
-export type EvaluationResult = {
-  taskId: string
-  requirementVersion: number
-  status: "ready" | "needsVerification" | "needsSearch"
-  recommendations: EvaluationRecommendation[]
-  rejected: {
-    productId: string
-    reasons: string[]
-  }[]
-  verificationRequests: VerificationRequest[]
-  searchHints: string[]
-}
-
-export type Authorization = {
-  authorizationId: string
-  allowedOfferId: string
-  maxTotalMinor: number
-  maxQuantity: number
-  currency: string
-  expiresAt: string
-}
-
-export type PurchaseCheck = {
-  taskId: string
-  requirementVersion: number
-  status: "approved" | "blocked" | "needsVerification"
-  offerId: string | null
-  totalMinor: number | null
-  checkedAt: string
-  reasons: string[]
-  verificationRequests: VerificationRequest[]
-}
-
-export type EvaluateCandidatesInput = {
-  requirement: Requirement
-  candidates: Candidate[]
-}
-
-export type CheckPurchaseInput = {
-  requirement: Requirement
-  candidate: Candidate
-  quantity: number
-  authorization: Authorization | null
-}
-
-export type AgentErrorCode =
-  | "TIMEOUT"
-  | "SOURCE_UNAVAILABLE"
-  | "INVALID_INPUT"
-  | "AUTHORIZATION_UNAVAILABLE"
-  | "INTERNAL_ERROR"
-
-export type AgentError = {
-  code: AgentErrorCode
-  message: string
-  retryable: boolean
-  details?: string[]
-}
-
 export type ProductIdentity = Pick<Candidate, "productId" | "skuId" | "offerId">
-export type SearchErrorCode =
-  | "INVALID_INPUT" | "SOURCE_UNAVAILABLE" | "TIMEOUT" | "UNSUPPORTED_CATEGORY"
-export type SearchPlan = {
-  category: string
-  terms: string[]
-  currency: string
-  budget: Requirement["budget"]
-  constraints: Requirement["hardConstraints"]
-  excludedProductIds: string[]
-  requiredFields: string[]
-  destination?: string
+
+export type FilterStage = "product_name" | "range" | "include" | "exclude"
+
+export type FilterLog = {
+  stage: FilterStage
+  conditionId: string
+  mode: "must" | "prefer"
+  beforeCount: number
+  afterCount: number
+  removedCount: number
+  unknownCount: number
+  message: string
 }
 
-export type ShoppingWorkflowResult = {
+export type ScoringCondition = {
+  id: string
+  kind: FilterStage
+  must: MustFlag
+  label: string
+  productName?: string
+  field?: RangeField
+  min?: number | null
+  max?: number | null
+  keywords?: string[]
+}
+
+export type ConditionScore = {
+  conditionId: string
+  score: 1 | 2 | 3 | 4 | 5
+  reason: string
+  evidenceFields: string[]
+  source: "llm" | "rule" | "deterministic-fallback"
+}
+
+export type RankedCandidate = {
+  rank: number
+  candidate: Candidate
+  finalScore: number
+  popularityScore: number | null
+  conditionScores: ConditionScore[]
+  needsVerification: string[]
+}
+
+export type SearchStatus = "complete" | "partial" | "failed"
+export type SearchOutcome = "ranked" | "no_match" | "failed"
+
+export type RankedSearchResult = {
   taskId: string
   requirementVersion: number
-  search: SearchResult
-  evaluation: EvaluationResult
-  verificationRounds: number
-  stopReason: "ready" | "needsSearch" | "searchFailed" | "verificationLimit" | "noVerifiableFields"
+  status: SearchStatus
+  outcome: SearchOutcome
+  candidates: RankedCandidate[]
+  filterLogs: FilterLog[]
+  warnings: string[]
+  message: string
+}
+
+export type SearchErrorCode =
+  | "INVALID_INPUT"
+  | "SOURCE_UNAVAILABLE"
+  | "TIMEOUT"
+  | "UNSUPPORTED_CATEGORY"
+
+export type ProviderStatus = "complete" | "partial"
+
+export type ProviderSearchResult<T> = {
+  products: T[]
+  status: ProviderStatus
+  warnings?: string[]
 }

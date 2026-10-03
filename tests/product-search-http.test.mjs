@@ -11,43 +11,51 @@ requireTS.extensions[".ts"] = (module, filename) => {
   })
   module._compile(outputText, filename)
 }
+
 const { POST: search } = requireTS("../app/api/products/search/route.ts")
-const { POST: verify } = requireTS("../app/api/products/verify/route.ts")
 const { productSearchResponse } = requireTS("../lib/product-search-http.ts")
-const requirement = {
-  taskId: "homepage-test", requirementVersion: 3, category: "Electronics",
-  query: "wireless headphones", currency: "HKD", budget: { maxMinor: 50000, scope: "delivered" },
-  hardConstraints: [], preferences: [], excludedProductIds: [], destination: "HK",
-}
-const request = (body) => new Request("http://localhost/api/products/search", {
-  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+
+const input = () => ({
+  taskId: "http-test",
+  requirementVersion: 3,
+  product_name: { value: "乳液", must: 1 },
+  range_conditions: [
+    { field: "volumeMl", min: 100, max: 300, must: 1 },
+    { field: "priceMinor", min: 10000, max: 30000, must: 0 },
+  ],
+  include_keywords: [{ keywords: ["敏感肌", "sensitive skin"], must: 1 }],
+  exclude_keywords: [{ keywords: ["酒精", "alcohol"], must: 1 }],
 })
 
-test("homepage search and verification routes return real agent results", async () => {
-  const response = await search(request({ requirement, limit: 20 }))
+const request = (body) => new Request("http://localhost/api/products/search", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(body),
+})
+
+test("search route returns ranked results, logs, identity, and no-store", async () => {
+  const response = await search(request(input()))
   assert.equal(response.status, 200)
   assert.equal(response.headers.get("Cache-Control"), "no-store")
   const result = await response.json()
-  const light = result.candidates.find((candidate) => candidate.productId === "product-light")
-  assert.equal(light.attributes.weightGrams.value, null)
-  const updatedResponse = await verify(request({ requirement, candidates: result.candidates, requests: [{
-    productId: light.productId, skuId: light.skuId, offerId: light.offerId,
-    fields: ["attributes.weightGrams"], reason: "Homepage lookup",
-  }] }))
-  assert.equal(updatedResponse.status, 200)
-  const updated = await updatedResponse.json()
-  assert.equal(updated.taskId, requirement.taskId)
-  assert.equal(updated.requirementVersion, requirement.requirementVersion)
-  assert.equal(updated.candidates.find((candidate) => candidate.productId === "product-light").attributes.weightGrams.value, 180)
+  assert.equal(result.taskId, "http-test")
+  assert.equal(result.requirementVersion, 3)
+  assert.equal(result.outcome, "ranked")
+  assert.ok(result.candidates.length > 0 && result.candidates.length <= 10)
+  assert.deepEqual(result.filterLogs.map((log) => log.stage), ["product_name", "range", "range", "include", "exclude"])
 })
 
-test("malformed JSON and invalid search input produce structured 400 errors", async () => {
-  for (const req of [
-    new Request("http://localhost", { method: "POST", body: "{" }), request(null),
-    request({ requirement, limit: 0 }), request({ requirement: { ...requirement, query: "" }, limit: 10 }),
-    request({ requirement: null }),
-  ]) {
-    const response = await search(req)
+test("malformed JSON and invalid structured input return 400", async () => {
+  const invalidInputs = [
+    null,
+    { ...input(), taskId: "" },
+    { ...input(), product_name: { value: "", must: 1 } },
+    { ...input(), range_conditions: [{ field: "price", min: 1, max: 2, must: 1 }] },
+    { ...input(), include_keywords: [{ keywords: [], must: 1 }] },
+  ]
+  const requests = [new Request("http://localhost", { method: "POST", body: "{" }), ...invalidInputs.map(request)]
+  for (const item of requests) {
+    const response = await search(item)
     assert.equal(response.status, 400)
     const result = await response.json()
     assert.equal(result.status, "failed")
@@ -55,19 +63,23 @@ test("malformed JSON and invalid search input produce structured 400 errors", as
   }
 })
 
-test("unsupported categories and oversized verification batches have explicit errors", async () => {
-  const unsupported = await search(request({ requirement: { ...requirement, category: "Clothing" }, limit: 10 }))
-  assert.equal(unsupported.status, 422)
-  const oversized = await verify(request({ requirement, candidates: Array(101).fill(null), requests: [] }))
-  assert.equal(oversized.status, 400)
-  assert.equal((await oversized.json()).taskId, requirement.taskId)
+test("oversized declared request bodies are rejected before parsing", async () => {
+  const response = await search(new Request("http://localhost/api/products/search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Content-Length": "100001" },
+    body: JSON.stringify(input()),
+  }))
+  assert.equal(response.status, 400)
+  assert.match((await response.json()).warnings[0], /^INVALID_INPUT:/)
 })
 
-test("unexpected source exceptions do not expose backend details", async () => {
-  const response = await productSearchResponse(request({ requirement }), async () => { throw new Error("secret details") })
+test("transport hides unexpected server errors", async () => {
+  const response = await productSearchResponse(request(input()), async () => {
+    throw new Error("private upstream response")
+  })
   assert.equal(response.status, 503)
   const body = await response.json()
+  assert.equal(body.taskId, "http-test")
   assert.equal(body.requirementVersion, 3)
-  assert.match(body.warnings[0], /^SOURCE_UNAVAILABLE:/)
-  assert.ok(!JSON.stringify(body).includes("secret details"))
+  assert.ok(!JSON.stringify(body).includes("private upstream response"))
 })
