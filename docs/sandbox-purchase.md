@@ -1,5 +1,7 @@
 # 模拟商户订单与 Stripe 沙盒支付
 
+> 当前购买规则已更新：主 Agent 购买必须有明确的有限授权；一次测试许可不能替代授权。旧浏览器独立沙盒付款入口已关闭。以下历史验收保留，最新接口和调试路径见 [有限授权与风控](limited-authorization.md)。
+
 本轮是独立开发测试链路，不接真实 Shopping，不将 ShoppingStub 未知价格或普通 mock 推荐变成付款报价。商户为 DemoMerchantAdapter，商品不真实购买；Stripe 仅接受测试密钥和官方测试 PaymentMethod。本模块没有正式授权、风控、退款、物流或部署能力。
 
 ## 模块与替换接口

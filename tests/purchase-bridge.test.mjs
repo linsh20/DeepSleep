@@ -14,6 +14,8 @@ const {MainTaskOrchestrator}=requireTS('../services/main-agent/orchestrator.ts')
 const {DevelopmentRequirementInterpreter}=requireTS('../services/main-agent/requirement-interpreter.ts')
 const {ShoppingStub}=requireTS('../services/main-agent/shopping-port.ts')
 const {DemoMerchantAdapter}=requireTS('../services/purchase-execution/demo-merchant.ts')
+const {RiskRepository}=requireTS('../services/risk-control/repository.ts')
+const {AuthorizationService}=requireTS('../services/risk-control/authorization.ts')
 const {PurchaseBridge}=requireTS('../services/purchase-bridge/service.ts')
 const {bridgeHttp}=requireTS('../services/purchase-bridge/http.ts')
 const {createAgentHttp}=requireTS('../services/main-agent/http.ts')
@@ -29,7 +31,10 @@ const draft=()=>({category:'沙盒测试乳液',query:'测试乳液 200ml',quant
 async function setup(t){
  const dir=mkdtempSync(join(tmpdir(),'bridge-')),path=join(dir,'test.sqlite');const repo=new SqlitePurchaseRepository(path),main=new SqliteTaskRepository(repo.db),payment=new Payment(),merchant=new DemoMerchantAdapter(repo),bridge=new PurchaseBridge(main,repo,merchant,payment),agent=new MainTaskOrchestrator(main,new DevelopmentRequirementInterpreter(),new ShoppingStub());
  t.after(()=>{try{repo.close()}catch{}rmSync(dir,{recursive:true,force:true})})
- main.sessions.add('owner-token');const owner=main.owner('owner-token');const created=await agent.create(owner,randomUUID());const task=await agent.save(created.taskId,owner,{requestId:randomUUID(),expectedVersion:0,intent:'purchase',requirementDraft:draft()});
+ main.sessions.add('owner-token');const owner=main.owner('owner-token');
+ // Explicit test authorization; historical bridge assertions remain unchanged.
+ new AuthorizationService(new RiskRepository(repo)).save(owner,{startsAt:Date.now()-1000,expiresAt:Date.now()+3600000,singleSoftMinor:20000,singleHardMinor:20000,monthlySoftMinor:100000,monthlyHardMinor:100000,productIds:['sandbox-lotion'],merchantIds:['demo-merchant'],paymentMethods:['stripe_test_card']},0,randomUUID(),true);
+ const created=await agent.create(owner,randomUUID());const task=await agent.save(created.taskId,owner,{requestId:randomUUID(),expectedVersion:0,intent:'purchase',requirementDraft:draft()});
  const change=(input={},intent='purchase')=>agent.save(task.taskId,owner,{requestId:randomUUID(),expectedVersion:main.get(task.taskId,owner).requirementVersion,intent,requirementDraft:{...draft(),...input}})
  const prepare=()=>bridge.prepare(task.taskId,owner,{requestId:randomUUID(),expectedVersion:main.get(task.taskId,owner).requirementVersion})
  const execute=v=>bridge.execute(task.taskId,owner,{planId:v.purchases[0].plan.planId,expectedVersion:v.requirementVersion,requestId:randomUUID(),testPermission:true})

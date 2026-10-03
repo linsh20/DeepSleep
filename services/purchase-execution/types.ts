@@ -27,7 +27,8 @@ export interface PaymentPort {
   verifyWebhook(raw: string, signature: string): { id: string; paymentId: string; operationId?: string } | null
 }
 export interface ExecutionGate {
-  check(input: { mode: "sandbox" | "production"; task: SandboxTask; plan: SandboxPlan; quote: Quote; userId: string; expectedVersion: number; permitted: boolean; now: number }): { decision: "sandbox_test_only" }
+  check(input: { mode: "sandbox" | "production"; task: SandboxTask; plan: SandboxPlan; quote: Quote; userId: string; expectedVersion: number; permitted: boolean; now: number; operationId?: string }): { decision: "sandbox_test_only" | "approve" | "hold" | "block"; errorCode?: string }
+  settle?(operation: PurchaseOperation, now: number): void
 }
 const brand = Symbol.for("deepsleep.purchase-error")
 export class PurchaseError extends Error {

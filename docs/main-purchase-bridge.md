@@ -1,5 +1,7 @@
 # 主 Agent 与沙盒购买桥接
 
+> 当前购买规则已更新：主 Agent 购买必须有明确的有限授权；一次测试许可不能替代授权。旧浏览器独立沙盒付款入口已关闭。以下历史验收保留，最新接口和调试路径见 [有限授权与风控](limited-authorization.md)。
+
 ## 权威来源与身份
 
 主 Agent 的 `deepsleep_demo` HttpOnly / SameSite=Strict cookie 是服务端随机生成的演示会话（30天）。SQLite 只保存其 SHA256；该散列作为任务归属。所有桥接接口复用此 cookie，不接受 userId、任务快照、价格、商户或支付凭证。它仍是本地开发会话，不是生产用户认证。

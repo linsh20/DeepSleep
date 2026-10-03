@@ -1,3 +1,4 @@
+import { LimitedExecutionGate } from "../risk-control/gate"
 import { randomUUID } from "node:crypto"
 import type { SqliteTaskRepository } from "../main-agent/sqlite-repository"
 import type { MainTask } from "../main-agent/types"
@@ -27,7 +28,7 @@ export function currentTaskResolver(main: SqliteTaskRepository) {
 export class PurchaseBridge {
   readonly execution: PurchaseExecutionService
   constructor(private main: SqliteTaskRepository, private repo: SqlitePurchaseRepository, private merchant: MerchantOrderPort, payment: PaymentPort) {
-    this.execution = new PurchaseExecutionService(repo, merchant, new SandboxExecutionGate(), payment, { currentTask: currentTaskResolver(main) })
+    this.execution = new PurchaseExecutionService(repo, merchant, new LimitedExecutionGate(repo), payment, { currentTask: currentTaskResolver(main) })
   }
   private version(taskId: string, owner: string, version: number) {
     const task = this.main.get(taskId, owner)

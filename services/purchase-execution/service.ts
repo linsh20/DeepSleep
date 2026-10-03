@@ -19,9 +19,31 @@ export class PurchaseExecutionService {
     return { plan, task }
   }
   private current(task: SandboxTask) { return this.options.currentTask?.(task) ?? task }
-  private check(op: PurchaseOperation) {
+  private gateInput(op: PurchaseOperation) {
     const { task, plan } = this.owned(op.planId, op.userId)
-    return this.gate.check({ mode: this.options.mode ?? "sandbox", task: this.current(task), plan, quote: op.quote, userId: op.userId, expectedVersion: op.requirementVersion, permitted: op.permit.kind === "one_sandbox_test", now: this.now() })
+    ensure(JSON.stringify(this.repo.quote(op.planId)) === JSON.stringify(op.quote), "QUOTE_MISMATCH", "当前报价与原操作不一致", 409)
+    return { operationId: op.operationId, mode: this.options.mode ?? "sandbox", task: this.current(task), plan, quote: op.quote, userId: op.userId, expectedVersion: op.requirementVersion, permitted: op.permit.kind === "one_sandbox_test", now: this.now() } as const
+  }
+  private check(op: PurchaseOperation) {
+    const decision = this.repo.transaction(() => this.gate.check(this.gateInput(op)))
+    ensure(decision.decision === "approve" || decision.decision === "sandbox_test_only", decision.errorCode ?? (decision.decision === "hold" ? "RISK_HOLD" : "RISK_BLOCK"), "购买已暂停，请查看风控决策及确认单", 403)
+  }
+  private submit(id: string, token: string, stage: "create" | "confirm") {
+    const decision = this.repo.transaction(() => {
+      const op = this.repo.operation(id)
+      ensure(op.leaseToken === token && op.leaseUntil > this.now(), "OPERATION_BUSY", "操作已由其他执行者接管", 409)
+      const result = this.gate.check(this.gateInput(op))
+      if (result.decision !== "approve" && result.decision !== "sandbox_test_only") return result
+      this.window(stage === "create" ? op.createStartedAt : op.confirmStartedAt)
+      if (stage === "create") {
+        op.providerBinding ??= this.payment.configurationId(); op.createStartedAt ??= this.now(); op.paymentStatus = "creating"; op.errorCode = null
+      } else { op.confirmStartedAt ??= this.now(); op.paymentStatus = "confirming" }
+      this.repo.writeOperation(op)
+      this.repo.event(id, `payment_${stage}`, "当前任务、授权及预算原子复核后提交原幂等操作")
+      return result
+    })
+    ensure(decision.decision === "approve" || decision.decision === "sandbox_test_only", decision.errorCode ?? (decision.decision === "hold" ? "RISK_HOLD" : "RISK_BLOCK"), "购买已暂停，请查看风控决策及确认单", 403)
+    return this.repo.operation(id)
   }
   async createFixture(userId: string, requestId: string) {
     this.requestId(requestId)
@@ -83,6 +105,7 @@ export class PurchaseExecutionService {
       if (op.paymentStatus !== "succeeded") op.paymentStatus = snapshot.status
       op.errorCode = null
       this.repo.event(id, "payment_status", op.paymentStatus)
+      this.gate.settle?.(op, this.now())
     }, this.now())
   }
   private window(start: number | null) {
@@ -128,7 +151,7 @@ export class PurchaseExecutionService {
       } else if (allowPayment) {
         this.check(op); this.window(op.createStartedAt)
         ensure(this.payment.configured(), "STRIPE_NOT_CONFIGURED", "Stripe 沙盒未配置；未调用 Stripe", 503)
-        op = this.repo.mutate(id, token, current => { current.providerBinding ??= this.payment.configurationId(); current.createStartedAt ??= this.now(); current.paymentStatus = "creating"; current.errorCode = null; this.repo.event(id, "payment_create", "使用持久化创建幂等键") }, this.now())
+        op = this.submit(id, token, "create")
         op = this.apply(id, token, await this.bounded(() => this.payment.create(op)))
       } else {
         throw new PurchaseError("PAYMENT_ID_UNKNOWN", "没有已知 Stripe ID；可在有效期内使用原操作恢复，或等待已验签通知")
@@ -136,7 +159,7 @@ export class PurchaseExecutionService {
       if (allowPayment && op.paymentStatus === "requires_confirmation") {
         // Re-read authoritative task and immutable quote after every await, immediately before charging.
         this.check(op); this.window(op.confirmStartedAt)
-        op = this.repo.mutate(id, token, current => { current.confirmStartedAt ??= this.now(); current.paymentStatus = "confirming"; this.repo.event(id, "payment_confirm", "仅确认已关联的 Stripe 测试 PaymentIntent") }, this.now())
+        op = this.submit(id, token, "confirm")
         op = this.apply(id, token, await this.bounded(() => this.payment.confirm(op)))
       }
       if (op.paymentStatus === "succeeded") await this.confirmMerchant(id, token)
@@ -147,6 +170,7 @@ export class PurchaseExecutionService {
       this.repo.mutate(id, token, op => {
         if (op.paymentStatus !== "succeeded" && ["creating", "confirming"].includes(op.paymentStatus)) op.paymentStatus = "unknown"
         op.errorCode = code; this.repo.event(id, "execution_paused", code)
+        this.gate.settle?.(op, this.now())
       }, this.now())
       return false
     } finally { this.repo.release(id, token) }
