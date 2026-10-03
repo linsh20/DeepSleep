@@ -211,3 +211,18 @@
 - `paymentOptimization.recommended` 是支付建议，不是风控的 `risk_approved`。
 - B 不创建订单、不保存后端授权、不传完整卡号、不执行扣款。
 - 所有 `Fact` 都保留 `source`、`fetchedAt`、`status`；未知使用 `value: null`，不能用 `0` 代替。
+
+## 10. 旧版兼容入口
+
+`lib/agent-b/index.ts` 仍保留旧版 `evaluateCandidates` 结果类型 `EvaluationResult`，供尚未迁移的旧网页使用：
+
+| 字段 | 含义 |
+| --- | --- |
+| `taskId` / `requirementVersion` | 任务和需求版本 |
+| `status` | `ready \| needsVerification \| needsSearch` |
+| `recommendations` | 旧版推荐数组，包含 `productId`、`skuId`、`offerId`、`score`、`label`、`satisfied`、`tradeoffs`、`evidenceFields` |
+| `rejected` | 被淘汰的商品和原因 |
+| `verificationRequests` | 旧版商品事实补查请求 |
+| `searchHints` | 需要主 Agent 扩大搜索时的提示 |
+
+新 A/B 联调应使用前面的 `ContractBResult`，不要把旧版 `status: "ready"` 与契约版 `result_ready` 混用，也不要用旧版结果触发支付。
