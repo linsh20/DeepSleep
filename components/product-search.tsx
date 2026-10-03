@@ -37,7 +37,7 @@ export function ProductSearch() {
     setPending(true)
     setError("")
     setResult(null)
-    const timer = setTimeout(() => controller.abort(), 30000)
+    const timer = setTimeout(() => controller.abort(), 150000)
     void fetch("/api/products/search", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

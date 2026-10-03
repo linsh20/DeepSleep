@@ -14,6 +14,7 @@ requireTS.extensions[".ts"] = (module, filename) => {
 
 const { createProductSearch } = requireTS("../services/product-search.ts")
 const { MockProductProvider, ProductProviderError, identityKey } = requireTS("../services/product-provider.ts")
+const { OpenAICompatibleConditionScorer } = requireTS("../services/condition-scorer.ts")
 
 const baseInput = (overrides = {}) => ({
   taskId: "search-test",
@@ -153,6 +154,46 @@ test("one scorer failure degrades only that product and returns partial usable r
   assert.equal(result.outcome, "ranked")
   assert.ok(result.candidates.length > 1)
   assert.ok(result.warnings.some((warning) => warning.includes("LLM 评分失败")))
+})
+
+test("OpenAI-compatible scorer canonicalizes common candidate evidence prefixes and logs safely", async () => {
+  const originalFetch = globalThis.fetch
+  const originalInfo = console.info
+  let logLine = ""
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: JSON.stringify({
+      scores: [{
+        conditionId: "product_name",
+        score: 5,
+        reason: "The title matches the requested product name.",
+        evidenceFields: ["candidate.title", "candidate.volumeMl", "candidate.searchableText.description"],
+      }],
+    }) } }],
+  }), { status: 200, headers: { "Content-Type": "application/json" } })
+  console.info = (message) => { logLine = String(message) }
+  try {
+    const provider = { recall: async () => ({ products: [raw("adapter", "Adapter Lotion")], status: "complete" }) }
+    const scorer = new OpenAICompatibleConditionScorer({
+      endpoint: "https://llm.example.test/v1/chat/completions",
+      apiKey: "test-secret",
+      model: "test-model",
+    })
+    const result = await createProductSearch(provider, scorer).searchProducts(baseInput({
+      product_name: { value: "Adapter Lotion", must: 1 },
+      range_conditions: [], include_keywords: [], exclude_keywords: [],
+    }))
+    assert.equal(result.status, "complete")
+    assert.equal(result.candidates[0].conditionScores[0].source, "llm")
+    assert.deepEqual(result.candidates[0].conditionScores[0].evidenceFields, [
+      "title", "attributes.volumeMl", "searchableText.description",
+    ])
+    assert.match(logLine, /^\[llm-score\]/)
+    assert.match(logLine, /"event":"success"/)
+    assert.ok(!logLine.includes("test-secret"))
+  } finally {
+    globalThis.fetch = originalFetch
+    console.info = originalInfo
+  }
 })
 
 test("a scorer timeout is bounded and falls back without losing the candidate", async () => {

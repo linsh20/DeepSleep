@@ -79,11 +79,15 @@ HTTP 入口为 `POST /api/products/search`，请求体就是上述结构。响�
 LLM_API_URL=https://provider.example/v1/chat/completions
 LLM_API_KEY=...
 LLM_MODEL=...
+LLM_TIMEOUT_MS=30000
 ```
 
 不得使用 `NEXT_PUBLIC_` 暴露密钥。商品文本作为不可信数据放在 user 内容中；系统指令禁止执行商品文本中的指令或补写事实。模型输出必须覆盖全部条件、满足 1–5 整数分和证据字段约束。
+`LLM_API_URL` 必须指向完整的 Chat Completions 路径。`LLM_TIMEOUT_MS` 可选，默认值为 30000 毫秒；无效值会回退到默认值。
 
 未配置模型、超时或单商品输出非法时，该商品使用确定性评分降级，结果标记为 `partial`。单商品失败不会导致整个搜索失败。确定性规则为满足 5 分、违反 1 分、未知 3 分。
+
+服务端以 `[llm-score]` 输出安全结构化日志，字段包括 `event`、`productId`、`durationMs`、`conditionCount` 和错误代码。日志不会包含 API Key、端点、提示词、商品正文、模型正文或上游私有错误消息。
 
 ## 状态语义
 

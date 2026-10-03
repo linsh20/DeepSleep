@@ -43,7 +43,7 @@ export function createProductSearch(
 ) {
   const recallLimit = options.recallLimit ?? 100
   const providerTimeoutMs = options.providerTimeoutMs ?? 5000
-  const scorerTimeoutMs = options.scorerTimeoutMs ?? 8000
+  const scorerTimeoutMs = options.scorerTimeoutMs ?? positiveIntegerEnv("LLM_TIMEOUT_MS") ?? 30000
   const scorerConcurrency = options.scorerConcurrency ?? 3
   validateOptions({ recallLimit, providerTimeoutMs, scorerTimeoutMs, scorerConcurrency })
 
@@ -487,4 +487,11 @@ function comparePopularity(left: number | null, right: number | null): number {
   if (left === null) return -1
   if (right === null) return 1
   return left - right
+}
+
+function positiveIntegerEnv(name: string): number | null {
+  const raw = process.env[name]?.trim()
+  if (!raw || !/^\d+$/.test(raw)) return null
+  const parsed = Number(raw)
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null
 }
