@@ -121,6 +121,8 @@ WATSONS_DB_PATH=D:\snapshots\watsons\products.db
 
 下游必须校验返回结果的 `taskId` 和 `requirementVersion`，默认从 `candidates[0]` 开始授权验证，不满足时按 rank 递补。推荐顺序不是购买授权。
 
+Agent A 与契约版 Agent B 的服务端联调入口为 `services/shopping-agent.ts`，字段映射、补查边界和 Watsons 数据限制见 [A/B 联调文档](docs/agent-b-shopping-integration.md)。
+
 ## 验证
 
 ```sh
