@@ -87,7 +87,7 @@ export class MainTaskOrchestrator {
     return this.once(userId, requestId, ["create"], async () => {
       const task: MainTask = { taskId: randomUUID(), userId, ...clarify("unclear", {}), requirementVersion: 0,
         requirement: null, status: "needs_clarification", shoppingResult: null, events: [] }
-      event(task, "created", "开发输入模式；内存存储；购买执行尚未接入")
+      event(task, "created", "任务创建；正式购买执行尚未接入；沙盒测试必须通过独立许可入口")
       this.repository.insert(task)
       return task
     })
@@ -147,7 +147,7 @@ export class MainTaskOrchestrator {
           ? await this.search(taskId, userId, randomUUID(), applied.requirementVersion) : applied
         if (result.requirementVersion !== applied.requirementVersion || result.conversationRevision !== snapshot.conversationRevision) throw new TaskError("MODEL_SUPERSEDED", "任务已更新；请查看当前版本结果", 409)
         reply = result.status === "needs_clarification" ? result.clarificationQuestions.join("\n")
-          : result.status === "result_ready" ? "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。"
+          : result.status === "result_ready" ? "已返回 development_mock 模拟方案，商品事实未核验。正式购买执行尚未接入；沙盒测试需独立许可。"
           : result.status === "needs_verification" ? "ShoppingStub 缺少关键事实，需要核验；未执行购买。"
           : result.status === "no_match" ? "ShoppingStub 没有符合条件的方案。"
           : result.status === "failed" ? "ShoppingStub 调用失败，请查看错误码；未执行购买。"

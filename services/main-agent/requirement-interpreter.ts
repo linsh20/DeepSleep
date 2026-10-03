@@ -73,7 +73,7 @@ export function clarify(intent: TaskIntent, requirementDraft: RequirementDraft):
   const need = (field: string, complete: unknown, question: string) => {
     if (!complete) { missingFields.push(field); clarificationQuestions.push(question) }
   }
-  need("intent", intent !== "unclear", "你希望比较方案，还是提出购买任务？本轮均不执行购买。")
+  need("intent", intent !== "unclear", "你希望比较方案，还是提出购买任务？对话不会自动付款。")
   need("category", requirementDraft.category, "请填写商品类别。")
   need("query", requirementDraft.query, "请说明希望搜索的商品。")
   need("currency", requirementDraft.currency, "请明确币种（本轮支持 HKD）。")

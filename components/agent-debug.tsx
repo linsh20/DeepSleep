@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
+import { AgentPurchaseDebug } from "@/components/agent-purchase-debug"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,12 +31,19 @@ export function AgentDebug() {
   const accept = useCallback((next?: MainTask) => {
     if (!next || currentId.current !== next.taskId) return
     currentId.current = next.taskId
+    localStorage.setItem("deepsleep-main-task", next.taskId)
     setTask(old => old && old.events.length > next.events.length ? old : next)
   }, [])
   const refresh = useCallback(async (id: string) => {
     accept((await request(`tasks/${id}`)).task)
     const info = await request("model"); if (info.model) setModel(info.model)
   }, [accept])
+  useEffect(() => {
+    const id = localStorage.getItem("deepsleep-main-task")
+    if (!id) return
+    currentId.current = id
+    void request("session", {}).then(() => refresh(id)).catch(e => setError(String(e)))
+  }, [refresh])
   const taskId = task?.taskId
   useEffect(() => {
     if (!taskId) return
@@ -56,7 +64,7 @@ export function AgentDebug() {
       const command = { path: "tasks", body: { requestId: crypto.randomUUID() } }
       setLastCommand(command)
       const result = await request(command.path, command.body)
-      if (result.task) { currentId.current = result.task.taskId; setTask(result.task) }
+      if (result.task) { currentId.current = result.task.taskId; localStorage.setItem("deepsleep-main-task",result.task.taskId); setTask(result.task) }
     } catch (e) { setError(String(e)) } finally { setBusy(false) }
   }
   async function save(form: FormData) {
@@ -93,7 +101,7 @@ export function AgentDebug() {
   return <main className="mx-auto w-full max-w-4xl space-y-5 p-6">
     <h1 className="text-2xl font-semibold">DeepSleep 主 Agent 调试</h1>
     <p>自然语言对话使用真实模型理解需求；结构化表单可单独调试和修正。ShoppingStub 仍为 development_mock，未核验真实商品。</p>
-    <p>仅供本地单进程开发；内存数据在进程重启后丢失，不用于授权、预算或支付去重。购买执行尚未接入。</p>
+    <p>仅供本地开发；任务和会话保存于 SQLite。沙盒购买需单独准备方案并明确许可；正式授权和真实购买未接入。</p>
     <Button onClick={start} disabled={busy}>开始新任务</Button>
     {error && <p role="alert" className="text-destructive">{error}</p>}
     {model && <p>模型 {model.model}：{({ missing_config: "未配置：请在服务端 .env.local 填写 LLM_API_KEY 并重启", untested: "已配置，尚未验证连接", connected: "最近一次真实模型请求连接成功", error: "最近一次真实模型请求失败" })[model.state]}{model.checkedAt ? `（${model.checkedAt}）` : ""}{model.code ? ` · ${model.code}` : ""}</p>}
@@ -110,7 +118,7 @@ export function AgentDebug() {
       </CardContent></Card>
       <Card><CardHeader><CardTitle>结构化表单模式（调试与修正）</CardTitle></CardHeader><CardContent>
         <form onSubmit={event => { event.preventDefault(); void save(new FormData(event.currentTarget)) }} className="grid gap-4 sm:grid-cols-2" key={`${task.taskId}-${task.requirementVersion}`}>
-          <label>意图<select name="intent" className="block w-full rounded border p-2" defaultValue={task.intent}><option value="unclear">尚未明确</option><option value="compare">比较方案</option><option value="purchase">购买任务（不执行）</option></select></label>
+          <label>意图<select name="intent" className="block w-full rounded border p-2" defaultValue={task.intent}><option value="unclear">尚未明确</option><option value="compare">比较方案</option><option value="purchase">购买任务（沙盒需单独许可）</option></select></label>
           <label>类别<Input name="category" defaultValue={task.requirementDraft.category ?? ""} placeholder="例如：化妆品" /></label>
           <label className="sm:col-span-2">商品与规格<Input name="query" defaultValue={task.requirementDraft.query ?? ""} placeholder="商品名称或类别；其他条件按需补充" /></label>
           <label>币种<select name="currency" defaultValue={task.requirementDraft.currency ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="HKD">HKD</option></select></label>
@@ -123,7 +131,7 @@ export function AgentDebug() {
       </CardContent></Card>
       <Card><CardHeader><CardTitle>任务状态：{task.status}</CardTitle></CardHeader><CardContent className="space-y-3">
         <p>任务 {task.taskId} · 需求版本 v{task.requirementVersion} · 意图 {task.intent}</p>
-        <p>{task.intent === "purchase" ? "购买执行尚未接入；返回方案不代表已下单。" : "当前任务仅展示方案，不创建购买或支付。"}</p>
+        <p>{task.intent === "purchase" ? "返回搜索方案不代表已下单；沙盒购买状态在独立面板中展示。" : "当前任务仅展示方案，不创建购买或支付。"}</p>
         <Button onClick={run} disabled={busy || !["ready_to_search", "failed"].includes(task.status)}>运行 ShoppingStub</Button>
         {lastCommand && <Button variant="outline" className="ml-2" disabled={busy} onClick={() => {
           setError(""); void send(lastCommand).catch(e => setError(String(e)))
@@ -143,6 +151,7 @@ export function AgentDebug() {
         <h2 className="font-semibold">ShoppingStub 结果（开发模拟 / 未核验）</h2>
         <pre className="overflow-auto whitespace-pre-wrap text-sm">{task.shoppingResult ? JSON.stringify(task.shoppingResult, null, 2) : "尚无当前版本结果"}</pre>
       </CardContent></Card>
+      <AgentPurchaseDebug key={`${task.taskId}-${task.requirementVersion}`} task={task}/>
       <Card><CardHeader><CardTitle>事件时间线</CardTitle></CardHeader><CardContent><ol className="space-y-2 text-sm">{task.events.map(e => <li key={e.sequence}>{e.at} · v{e.requirementVersion} · {e.type} · {e.detail}</li>)}</ol></CardContent></Card>
     </>}
   </main>

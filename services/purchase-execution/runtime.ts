@@ -1,3 +1,5 @@
+import { durableStore } from "../main-agent/storage"
+import { currentTaskResolver } from "../purchase-bridge/service"
 import { mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { SqlitePurchaseRepository } from "./repository"
@@ -17,6 +19,6 @@ export async function purchaseHttp(request: Request, action: string) {
   }
   const repo = local.deepSleepSandboxRepository
   const payment = new StripeSandboxPaymentAdapter(() => ({ key: process.env.STRIPE_SECRET_KEY, webhookSecret: process.env.STRIPE_WEBHOOK_SECRET }))
-  const service = new PurchaseExecutionService(repo, new DemoMerchantAdapter(repo), new SandboxExecutionGate(), payment)
+  const service = new PurchaseExecutionService(repo, new DemoMerchantAdapter(repo), new SandboxExecutionGate(), payment, { currentTask: currentTaskResolver(durableStore().main) })
   return createPurchaseHttp(service, repo, true)(request, action)
 }

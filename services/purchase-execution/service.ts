@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto"
 import { PurchaseError, ensure } from "./types"
-import type { ExecutionGate, MerchantOrderPort, PaymentPort, PaymentSnapshot, PurchaseOperation } from "./types"
+import type { ExecutionGate, MerchantOrderPort, PaymentPort, PaymentSnapshot, PurchaseOperation, SandboxTask } from "./types"
 import { SandboxPurchaseFixture } from "./fixture"
 import type { SqlitePurchaseRepository } from "./repository"
 
 export class PurchaseExecutionService {
-  constructor(private repo: SqlitePurchaseRepository, private merchant: MerchantOrderPort, private gate: ExecutionGate, private payment: PaymentPort, private options: { now?: () => number; timeoutMs?: number; mode?: "sandbox" | "production" } = {}) {}
+  constructor(private repo: SqlitePurchaseRepository, private merchant: MerchantOrderPort, private gate: ExecutionGate, private payment: PaymentPort, private options: { now?: () => number; timeoutMs?: number; mode?: "sandbox" | "production"; currentTask?: (task: SandboxTask) => SandboxTask } = {}) {}
   private now() { return (this.options.now ?? Date.now)() }
   private async bounded<T>(fn: () => Promise<T>): Promise<T> {
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -18,9 +18,10 @@ export class PurchaseExecutionService {
     ensure(task.userId === userId, "NOT_FOUND", "测试方案不存在", 404)
     return { plan, task }
   }
+  private current(task: SandboxTask) { return this.options.currentTask?.(task) ?? task }
   private check(op: PurchaseOperation) {
     const { task, plan } = this.owned(op.planId, op.userId)
-    return this.gate.check({ mode: this.options.mode ?? "sandbox", task, plan, quote: op.quote, userId: op.userId, expectedVersion: op.requirementVersion, permitted: op.permit.kind === "one_sandbox_test", now: this.now() })
+    return this.gate.check({ mode: this.options.mode ?? "sandbox", task: this.current(task), plan, quote: op.quote, userId: op.userId, expectedVersion: op.requirementVersion, permitted: op.permit.kind === "one_sandbox_test", now: this.now() })
   }
   async createFixture(userId: string, requestId: string) {
     this.requestId(requestId)
@@ -44,7 +45,8 @@ export class PurchaseExecutionService {
     ensure(input.testPermission === true, "TEST_PERMISSION_REQUIRED", "请许可本次沙盒测试", 403)
     ensure(this.options.mode !== "production", "POLICY_NOT_CONFIGURED", "正式策略未配置，拒绝执行", 403)
     const op = this.repo.transaction(() => {
-      const { plan, task } = this.owned(input.planId, userId)
+      const owned = this.owned(input.planId, userId)
+      const plan = owned.plan, task = this.current(owned.task)
       ensure(task.intent === "purchase", "COMPARE_NOT_EXECUTABLE", "比较任务禁止执行", 403)
       ensure(task.requirementVersion === input.expectedVersion && plan.requirementVersion === input.expectedVersion, "STALE_VERSION", "需求版本已变化", 409)
       const old = this.repo.forPlan(plan.planId)

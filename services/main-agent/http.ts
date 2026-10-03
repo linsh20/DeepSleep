@@ -4,7 +4,7 @@ import { draftValue, intentValue, keys, object } from "./requirement-interpreter
 import type { ModelConnection } from "./model-interpreter"
 import type { MainTaskOrchestrator } from "./orchestrator"
 
-export function createAgentHttp(agent: MainTaskOrchestrator, enabled: boolean, sessions = new Set<string>(), modelStatus?: () => ModelConnection) {
+export function createAgentHttp(agent: MainTaskOrchestrator, enabled: boolean, sessions: { has(id: string): boolean; add(id: string): unknown; owner?(id: string): string } = new Set<string>(), modelStatus?: () => ModelConnection) {
   // Opaque server-issued demo sessions; not authentication for a deployed product.
   const json = (body: unknown, status = 200, extra: Record<string, string> = {}) => Response.json(body, { status, headers: { "Cache-Control": "no-store", ...extra } })
   async function body(request: Request) {
@@ -34,16 +34,17 @@ export function createAgentHttp(agent: MainTaskOrchestrator, enabled: boolean, s
       if (request.method !== ((action === "get" || action === "model") ? "GET" : "POST")) throw new TaskError("METHOD_NOT_ALLOWED", "请求方法不支持", 405)
       if (request.method === "POST" && request.headers.get("origin") !== `${new URL(request.url).protocol}//${request.headers.get("host") ?? new URL(request.url).host}`) throw new TaskError("FORBIDDEN", "需要同源请求", 403)
       const cookie = request.headers.get("cookie")?.match(/(?:^|;\s*)deepsleep_demo=([a-f0-9-]+)/)?.[1]
-      const userId = cookie && sessions.has(cookie) ? cookie : undefined
+      const sessionId = cookie && sessions.has(cookie) ? cookie : undefined
+      const userId = sessionId ? (sessions.owner?.(sessionId) ?? sessionId) : undefined
       if (action === "session") {
         keys(await body(request), [])
-        const id = userId ?? randomUUID()
+        const id = sessionId ?? randomUUID()
         sessions.add(id)
-        return json({ mode: "model_with_development_form", storage: "memory", purchaseExecution: "unavailable" }, 200, {
-          "Set-Cookie": `deepsleep_demo=${id}; Path=/api/agent; HttpOnly; SameSite=Strict${new URL(request.url).protocol === "https:" ? "; Secure" : ""}`,
+        return json({ mode: "model_with_development_form", storage: sessions.owner ? "sqlite" : "memory", purchaseExecution: "explicit_sandbox_only" }, 200, {
+          "Set-Cookie": `deepsleep_demo=${id}; Path=/api/agent; HttpOnly; SameSite=Strict; Max-Age=2592000${new URL(request.url).protocol === "https:" ? "; Secure" : ""}`,
         })
       }
-      if (!userId) throw new TaskError("SESSION_REQUIRED", "请先建立演示会话；重启后需重新开始", 401)
+      if (!userId) throw new TaskError("SESSION_REQUIRED", "请先建立演示会话", 401)
       if (action === "model") return json({ model: modelStatus?.() ?? { state: "missing_config", model: "gpt-6.1-sol-plus" } })
       if (action === "get") return json({ task: agent.get(taskId!, userId) })
       const input = await body(request)
