@@ -2,6 +2,8 @@ export type MustFlag = 0 | 1
 
 export type ProductNameCondition = {
   value: string
+  /** English aliases generated upstream for the en_HK Watsons snapshot. */
+  aliases?: string[]
   must: MustFlag
 }
 
@@ -14,8 +16,12 @@ export type RangeCondition = {
   must: MustFlag
 }
 
+export type KeywordScope = "all" | "ingredients"
+
 export type KeywordCondition = {
   keywords: string[]
+  /** Defaults to all searchable product text. */
+  scope?: KeywordScope
   must: MustFlag
 }
 
@@ -81,10 +87,12 @@ export type ScoringCondition = {
   must: MustFlag
   label: string
   productName?: string
+  aliases?: string[]
   field?: RangeField
   min?: number | null
   max?: number | null
   keywords?: string[]
+  scope?: KeywordScope
 }
 
 export type ConditionScore = {

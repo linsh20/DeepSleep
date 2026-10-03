@@ -1,0 +1,108 @@
+[
+  {
+    "code": "BP_805351",
+    "name": "B Complex 100 with Folic Acid  Value Pack 90+10Tablets",
+    "category_path": [
+      {
+        "code": "040000",
+        "level": 1,
+        "name": "Healthcare"
+      },
+      {
+        "code": "040300",
+        "level": 2,
+        "name": "Health foods and Vitamins"
+      },
+      {
+        "code": "040313",
+        "level": 3,
+        "name": "Multivitamins"
+      }
+    ],
+    "status": "review_category_mismatch_or_missing"
+  },
+  {
+    "code": "BP_269352",
+    "name": "Curél - Deep Moisture Spray 60g + Intensive Moisture Cream Set",
+    "category_path": [
+      {
+        "code": "010000",
+        "level": 1,
+        "name": "Skin Care"
+      },
+      {
+        "code": "013100",
+        "level": 2,
+        "name": "Skin Care"
+      }
+    ],
+    "status": "generic_skincare_in_face_treatment_feed"
+  },
+  {
+    "code": "BP_804772",
+    "name": "Bio-Bird’s Nest Collagen Skin Enhancer 100ml",
+    "category_path": null,
+    "status": "review_category_mismatch_or_missing"
+  },
+  {
+    "code": "BP_256027",
+    "name": "WATER-DROP BB CREAM",
+    "category_path": [
+      {
+        "code": "020000",
+        "level": 1,
+        "name": "Makeup"
+      },
+      {
+        "code": "020100",
+        "level": 2,
+        "name": "Face"
+      },
+      {
+        "code": "020101",
+        "level": 3,
+        "name": "BB Cream"
+      }
+    ],
+    "status": "review_category_mismatch_or_missing"
+  },
+  {
+    "code": "BP_256022",
+    "name": "Orange Blossom And Snow Fungi Pore-Refining Night Gelly",
+    "category_path": [
+      {
+        "code": "010000",
+        "level": 1,
+        "name": "Skin Care"
+      },
+      {
+        "code": "011100",
+        "level": 2,
+        "name": "Face Mask"
+      },
+      {
+        "code": "011103",
+        "level": 3,
+        "name": "Anti-Aging"
+      }
+    ],
+    "status": "review_category_mismatch_or_missing"
+  },
+  {
+    "code": "BP_269351",
+    "name": "Curél - Aging Care Moisture Lotion & Cream + Intensive Moisture Cream + Wrinkle Moisture Essence Set",
+    "category_path": [
+      {
+        "code": "010000",
+        "level": 1,
+        "name": "Skin Care"
+      },
+      {
+        "code": "013100",
+        "level": 2,
+        "name": "Skin Care"
+      }
+    ],
+    "status": "generic_skincare_in_face_treatment_feed"
+  }
+]

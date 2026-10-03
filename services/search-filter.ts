@@ -1,6 +1,7 @@
 import type {
   Candidate,
   FilterLog,
+  KeywordScope,
   RangeField,
   ScoringCondition,
   StructuredSearchInput,
@@ -29,6 +30,7 @@ export function buildScoringConditions(input: StructuredSearchInput): ScoringCon
       must: input.product_name.must,
       label: `品名包含“${input.product_name.value}”`,
       productName: input.product_name.value,
+      aliases: [...(input.product_name.aliases ?? [])],
     },
     ...input.range_conditions.map((condition, index): ScoringCondition => ({
       id: `range:${index}:${condition.field}`,
@@ -45,6 +47,7 @@ export function buildScoringConditions(input: StructuredSearchInput): ScoringCon
       must: condition.must,
       label: `包含任一关键词：${condition.keywords.join(" / ")}`,
       keywords: [...condition.keywords],
+      scope: condition.scope ?? "all",
     })),
     ...input.exclude_keywords.map((condition, index): ScoringCondition => ({
       id: `exclude:${index}`,
@@ -52,6 +55,7 @@ export function buildScoringConditions(input: StructuredSearchInput): ScoringCon
       must: condition.must,
       label: `不包含任一关键词：${condition.keywords.join(" / ")}`,
       keywords: [...condition.keywords],
+      scope: condition.scope ?? "all",
     })),
   ]
 }
@@ -61,12 +65,15 @@ export function assessCondition(
   condition: ScoringCondition,
 ): ConditionAssessment {
   if (condition.kind === "product_name") {
-    const expected = normalizeText(condition.productName ?? "")
-    const matched = normalizeText(candidate.title).includes(expected)
+    const expected = [condition.productName ?? "", ...(condition.aliases ?? [])]
+      .map(normalizeText)
+      .filter(Boolean)
+    const title = normalizeText(candidate.title)
+    const matched = expected.some((term) => title.includes(term))
     return {
       state: matched ? "pass" : "fail",
       evidenceFields: ["title"],
-      reason: matched ? "商品标题匹配品名" : "商品标题不匹配品名",
+      reason: matched ? "商品标题匹配品名或别名" : "商品标题不匹配品名或别名",
     }
   }
 
@@ -87,9 +94,10 @@ export function assessCondition(
   }
 
   const keywords = condition.keywords ?? []
-  const corpus = searchableCorpus(candidate)
-  const matchedKeywords = keywords.filter((keyword) => corpus.text.includes(normalizeText(keyword)))
-  const evidenceFields = ["title", ...Object.keys(candidate.searchableText).map((key) => `searchableText.${key}`)]
+  const scope = condition.scope ?? "all"
+  const corpus = searchableCorpus(candidate, scope)
+  const matchedKeywords = keywords.filter((keyword) => keywordMatches(corpus.rawText, keyword, scope))
+  const evidenceFields = corpus.evidenceFields
   if (condition.kind === "include") {
     if (matchedKeywords.length > 0) {
       return { state: "pass", evidenceFields, reason: `匹配关键词：${matchedKeywords.join("、")}` }
@@ -152,15 +160,60 @@ function numericValue(candidate: Candidate, field: RangeField): number | null {
   return typeof value === "number" ? value : null
 }
 
-function searchableCorpus(candidate: Candidate): { text: string; complete: boolean } {
-  const facts = Object.values(candidate.searchableText)
+function searchableCorpus(
+  candidate: Candidate,
+  scope: KeywordScope,
+): { rawText: string; complete: boolean; evidenceFields: string[] } {
+  if (scope === "ingredients") {
+    const ingredients = candidate.searchableText.ingredients
+    return {
+      rawText: ingredients?.value ?? "",
+      complete: ingredients?.value !== null && ingredients?.value !== undefined,
+      evidenceFields: ["searchableText.ingredients"],
+    }
+  }
+
+  const entries = Object.entries(candidate.searchableText)
+  const facts = entries.map(([, fact]) => fact)
   return {
-    text: normalizeText([
+    rawText: [
       candidate.title,
       ...facts.flatMap((fact) => fact.value === null ? [] : [fact.value]),
-    ].join(" ")),
+    ].join(" "),
     complete: facts.length > 0 && facts.every((fact) => fact.value !== null),
+    evidenceFields: ["title", ...entries.map(([key]) => `searchableText.${key}`)],
   }
+}
+
+function keywordMatches(text: string, keyword: string, scope: KeywordScope): boolean {
+  const normalizedKeyword = normalizeText(keyword)
+  if (!normalizedKeyword) return false
+  if (scope === "ingredients" && isVolatileAlcoholKeyword(normalizedKeyword)) {
+    return containsVolatileAlcohol(text)
+  }
+  if (scope === "ingredients" && ["fragrance", "parfum", "perfume", "香精", "香料"].includes(normalizedKeyword)) {
+    return ingredientSegments(text).some((segment) =>
+      !/^(?:fragrance|parfum|perfume) free$/.test(segment) &&
+      /(?:\b(?:fragrance|parfum|perfume)\b|香精|香料)/.test(segment))
+  }
+  return normalizeText(text).includes(normalizedKeyword)
+}
+
+function isVolatileAlcoholKeyword(value: string): boolean {
+  return [
+    "alcohol", "alcohol denat", "alcohol denatured", "denatured alcohol",
+    "ethanol", "ethyl alcohol", "isopropyl alcohol", "isopropanol",
+    "sd alcohol", "酒精", "变性酒精", "乙醇",
+  ].includes(value) || value.startsWith("sd alcohol ")
+}
+
+function containsVolatileAlcohol(value: string): boolean {
+  return ingredientSegments(value).some((segment) =>
+    /^(?:alcohol(?: denat(?:ured)?)?|denatured alcohol|ethanol|ethyl alcohol|isopropyl alcohol|isopropanol|sd alcohol(?: \d+[a-z]?)?|酒精|变性酒精|乙醇)$/.test(segment))
+}
+
+function ingredientSegments(value: string): string[] {
+  return value.split(/[,;\n]/).map(normalizeText).filter(Boolean)
 }
 
 function rangeLabel(field: RangeField): string {

@@ -9,15 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 
 export function ProductSearch() {
-  const [productName, setProductName] = useState("乳液")
+  const [productName, setProductName] = useState("lotion")
   const [volumeMin, setVolumeMin] = useState("100")
   const [volumeMax, setVolumeMax] = useState("300")
   const [priceMin, setPriceMin] = useState("100")
   const [priceMax, setPriceMax] = useState("300")
-  const [includeMust, setIncludeMust] = useState("敏感肌, sensitive skin")
-  const [includePrefer, setIncludePrefer] = useState("保湿, 补水, moisturizing")
-  const [excludeMust, setExcludeMust] = useState("酒精, alcohol")
-  const [excludePrefer, setExcludePrefer] = useState("香精, fragrance")
+  const [includeMust, setIncludeMust] = useState("sensitive skin")
+  const [includePrefer, setIncludePrefer] = useState("moisturizing, moisturising, hydration")
+  const [excludeMust, setExcludeMust] = useState("alcohol, alcohol denat, ethanol")
+  const [excludePrefer, setExcludePrefer] = useState("fragrance, parfum")
   const [result, setResult] = useState<RankedSearchResult | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -70,7 +70,11 @@ export function ProductSearch() {
       return null
     }
     taskId.current ??= crypto.randomUUID()
-    const keywordGroup = (input: string, must: MustFlag) => ({ keywords: keywords(input), must })
+    const keywordGroup = (input: string, must: MustFlag, scope: "all" | "ingredients" = "all") => ({
+      keywords: keywords(input),
+      must,
+      scope,
+    })
     const searchInput: StructuredSearchInput = {
       taskId: taskId.current,
       requirementVersion: ++version.current,
@@ -80,7 +84,10 @@ export function ProductSearch() {
         { field: "priceMinor", ...price, must: 0 },
       ],
       include_keywords: [keywordGroup(includeMust, 1), keywordGroup(includePrefer, 0)],
-      exclude_keywords: [keywordGroup(excludeMust, 1), keywordGroup(excludePrefer, 0)],
+      exclude_keywords: [
+        keywordGroup(excludeMust, 1, "ingredients"),
+        keywordGroup(excludePrefer, 0, "ingredients"),
+      ],
     }
     if ([...searchInput.include_keywords, ...searchInput.exclude_keywords].some((group) => group.keywords.length === 0)) {
       setError("每组关键词至少需要填写一个词。")
@@ -95,7 +102,7 @@ export function ProductSearch() {
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <CardTitle><h2>结构化商品搜索</h2></CardTitle>
-            <Badge variant="outline">Mock 商品源</Badge>
+            <Badge variant="outline">Watsons en_HK 快照</Badge>
           </div>
           <CardDescription>硬条件由 TypeScript 筛选；条件满足度由 LLM 评分，未配置模型时使用可见的确定性降级。</CardDescription>
         </CardHeader>
@@ -107,8 +114,8 @@ export function ProductSearch() {
               <RangeFields label="价格（HKD，prefer）" min={priceMin} max={priceMax} setMin={setPriceMin} setMax={setPriceMax} step="0.01" />
               <Field label="必须包含（逗号分隔）" value={includeMust} onChange={setIncludeMust} />
               <Field label="希望包含（逗号分隔）" value={includePrefer} onChange={setIncludePrefer} />
-              <Field label="必须排除（逗号分隔）" value={excludeMust} onChange={setExcludeMust} />
-              <Field label="希望排除（逗号分隔）" value={excludePrefer} onChange={setExcludePrefer} />
+              <Field label="成分必须排除（逗号分隔）" value={excludeMust} onChange={setExcludeMust} />
+              <Field label="成分希望排除（逗号分隔）" value={excludePrefer} onChange={setExcludePrefer} />
             </div>
             <Button type="submit" disabled={pending}>{pending ? "搜索与排序中…" : "开始搜索"}</Button>
           </form>

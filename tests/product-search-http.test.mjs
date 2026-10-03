@@ -18,13 +18,13 @@ const { productSearchResponse } = requireTS("../lib/product-search-http.ts")
 const input = () => ({
   taskId: "http-test",
   requirementVersion: 3,
-  product_name: { value: "乳液", must: 1 },
+  product_name: { value: "lotion", aliases: ["emulsion"], must: 1 },
   range_conditions: [
-    { field: "volumeMl", min: 100, max: 300, must: 1 },
-    { field: "priceMinor", min: 10000, max: 30000, must: 0 },
+    { field: "volumeMl", min: 100, max: 600, must: 1 },
+    { field: "priceMinor", min: 0, max: 50000, must: 0 },
   ],
-  include_keywords: [{ keywords: ["敏感肌", "sensitive skin"], must: 1 }],
-  exclude_keywords: [{ keywords: ["酒精", "alcohol"], must: 1 }],
+  include_keywords: [{ keywords: ["moisturizing", "moisturising"], must: 0 }],
+  exclude_keywords: [{ keywords: ["alcohol", "ethanol"], scope: "ingredients", must: 1 }],
 })
 
 const request = (body) => new Request("http://localhost/api/products/search", {
@@ -42,6 +42,8 @@ test("search route returns ranked results, logs, identity, and no-store", async 
   assert.equal(result.requirementVersion, 3)
   assert.equal(result.outcome, "ranked")
   assert.ok(result.candidates.length > 0 && result.candidates.length <= 10)
+  assert.ok(result.candidates.every((item) => item.candidate.productId.startsWith("watsons-product:")))
+  assert.equal(result.candidates[0].candidate.offer.itemPriceMinor.source, "watsons-hk-api-snapshot")
   assert.deepEqual(result.filterLogs.map((log) => log.stage), ["product_name", "range", "range", "include", "exclude"])
 })
 
@@ -50,8 +52,10 @@ test("malformed JSON and invalid structured input return 400", async () => {
     null,
     { ...input(), taskId: "" },
     { ...input(), product_name: { value: "", must: 1 } },
+    { ...input(), product_name: { value: "lotion", aliases: [""], must: 1 } },
     { ...input(), range_conditions: [{ field: "price", min: 1, max: 2, must: 1 }] },
     { ...input(), include_keywords: [{ keywords: [], must: 1 }] },
+    { ...input(), exclude_keywords: [{ keywords: ["alcohol"], scope: "title", must: 1 }] },
   ]
   const requests = [new Request("http://localhost", { method: "POST", body: "{" }), ...invalidInputs.map(request)]
   for (const item of requests) {

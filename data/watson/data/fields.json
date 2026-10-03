@@ -1,0 +1,853 @@
+{
+  "product_count": 355,
+  "top_level_field_count": 94,
+  "note": "All nested objects/arrays are preserved. Nonempty is not evidence of a complete INCI list or verified efficacy.",
+  "fields": {
+    "averageRating": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "float": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "canBuyByOriginPrice": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "categoryNameLevels": {
+      "present_count": 354,
+      "nonempty_count": 354,
+      "types": {
+        "list": 354
+      },
+      "present_percent": 99.72,
+      "nonempty_percent": 99.72
+    },
+    "classifications": {
+      "present_count": 331,
+      "nonempty_count": 331,
+      "types": {
+        "list": 331
+      },
+      "present_percent": 93.24,
+      "nonempty_percent": 93.24
+    },
+    "code": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "crossBorderRegions": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "list": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "defaultVariantCode": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "description": {
+      "present_count": 352,
+      "nonempty_count": 352,
+      "types": {
+        "str": 352
+      },
+      "present_percent": 99.15,
+      "nonempty_percent": 99.15
+    },
+    "ean": {
+      "present_count": 348,
+      "nonempty_count": 348,
+      "types": {
+        "str": 348
+      },
+      "present_percent": 98.03,
+      "nonempty_percent": 98.03
+    },
+    "elabBetterIngredients": {
+      "present_count": 13,
+      "nonempty_count": 13,
+      "types": {
+        "str": 13
+      },
+      "present_percent": 3.66,
+      "nonempty_percent": 3.66
+    },
+    "elabBetterPackaging": {
+      "present_count": 34,
+      "nonempty_count": 34,
+      "types": {
+        "str": 34
+      },
+      "present_percent": 9.58,
+      "nonempty_percent": 9.58
+    },
+    "elabCleanBeauty": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabColorVariantProductData": {
+      "present_count": 355,
+      "nonempty_count": 1,
+      "types": {
+        "list": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 0.28
+    },
+    "elabCountryOfOrigin": {
+      "present_count": 344,
+      "nonempty_count": 344,
+      "types": {
+        "str": 344
+      },
+      "present_percent": 96.9,
+      "nonempty_percent": 96.9
+    },
+    "elabExclusiveBrand": {
+      "present_count": 119,
+      "nonempty_count": 119,
+      "types": {
+        "str": 119
+      },
+      "present_percent": 33.52,
+      "nonempty_percent": 33.52
+    },
+    "elabHalal": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIngredients": {
+      "present_count": 331,
+      "nonempty_count": 331,
+      "types": {
+        "str": 331
+      },
+      "present_percent": 93.24,
+      "nonempty_percent": 93.24
+    },
+    "elabIsAdultOnly": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsDonate": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsForMembershipApplication": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsOrganic": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsOutlet": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsPointRedemption": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsPoison2": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsSCProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsSDD": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsStoreOnly": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsStorePickupAllowed": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabIsVirtualProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabLatestTrends": {
+      "present_count": 34,
+      "nonempty_count": 34,
+      "types": {
+        "str": 34
+      },
+      "present_percent": 9.58,
+      "nonempty_percent": 9.58
+    },
+    "elabMarkDownMemPrice": {
+      "present_count": 9,
+      "nonempty_count": 9,
+      "types": {
+        "dict": 9
+      },
+      "present_percent": 2.54,
+      "nonempty_percent": 2.54
+    },
+    "elabMarkDownPrice": {
+      "present_count": 163,
+      "nonempty_count": 163,
+      "types": {
+        "dict": 163
+      },
+      "present_percent": 45.92,
+      "nonempty_percent": 45.92
+    },
+    "elabMaxOrderQuantity": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabOldPrice": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabPackItem": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabPackSize": {
+      "present_count": 333,
+      "nonempty_count": 333,
+      "types": {
+        "str": 333
+      },
+      "present_percent": 93.8,
+      "nonempty_percent": 93.8
+    },
+    "elabPreOrderProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabPrescription": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabPrice": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabProductName": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabRefillPack": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabRefillPackType": {
+      "present_count": 4,
+      "nonempty_count": 4,
+      "types": {
+        "str": 4
+      },
+      "present_percent": 1.13,
+      "nonempty_percent": 1.13
+    },
+    "elabRoutingLocation": {
+      "present_count": 3,
+      "nonempty_count": 3,
+      "types": {
+        "dict": 3
+      },
+      "present_percent": 0.85,
+      "nonempty_percent": 0.85
+    },
+    "elabSalesChannel": {
+      "present_count": 117,
+      "nonempty_count": 117,
+      "types": {
+        "list": 117
+      },
+      "present_percent": 32.96,
+      "nonempty_percent": 32.96
+    },
+    "elabSubscribable": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabTprPriceFlag": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabVariantProductContentSizeUnits": {
+      "present_count": 354,
+      "nonempty_count": 354,
+      "types": {
+        "list": 354
+      },
+      "present_percent": 99.72,
+      "nonempty_percent": 99.72
+    },
+    "elabVariantType": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "elabVolume": {
+      "present_count": 1,
+      "nonempty_count": 1,
+      "types": {
+        "str": 1
+      },
+      "present_percent": 0.28,
+      "nonempty_percent": 0.28
+    },
+    "elabWineRating": {
+      "present_count": 355,
+      "nonempty_count": 0,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 0.0
+    },
+    "elabproductNumberOfColor": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "firstReceivedFlag": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "flashSalePrice": {
+      "present_count": 4,
+      "nonempty_count": 4,
+      "types": {
+        "dict": 4
+      },
+      "present_percent": 1.13,
+      "nonempty_percent": 1.13
+    },
+    "giftWrappable": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "gtmCategoryPath": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "hasRefillOption": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "homeDeliveryOnly": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "homeExpressEligible": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "images": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "list": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isEstampProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isFreeGift": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isLoyaltyCardProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isLoyaltyProduct": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isMultiDimension": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isSFLockerNotAllowed": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isSiteSurveyFlag": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isStockLoaded": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "isVirtualBundle": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "masterBrand": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "maxOrderQuantity": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "name": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "pharmacy": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "pickupExpressEligible": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "potentialLoyaltyPoints": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "preOrder": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "price": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "priceRange": {
+      "present_count": 355,
+      "nonempty_count": 0,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 0.0
+    },
+    "productLoyaltyPoints": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "productNumberOfReview": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "int": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "promotionFirstTag": {
+      "present_count": 134,
+      "nonempty_count": 134,
+      "types": {
+        "str": 134
+      },
+      "present_percent": 37.75,
+      "nonempty_percent": 37.75
+    },
+    "promotionFirstTagEndDate": {
+      "present_count": 134,
+      "nonempty_count": 134,
+      "types": {
+        "str": 134
+      },
+      "present_percent": 37.75,
+      "nonempty_percent": 37.75
+    },
+    "promotionFirstTagStartDate": {
+      "present_count": 134,
+      "nonempty_count": 134,
+      "types": {
+        "str": 134
+      },
+      "present_percent": 37.75,
+      "nonempty_percent": 37.75
+    },
+    "promotionTags": {
+      "present_count": 355,
+      "nonempty_count": 0,
+      "types": {
+        "list": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 0.0
+    },
+    "purchasable": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "reviewAvgRating": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "selectedStoreOnly": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "sellQuantity": {
+      "present_count": 298,
+      "nonempty_count": 298,
+      "types": {
+        "int": 298
+      },
+      "present_percent": 83.94,
+      "nonempty_percent": 83.94
+    },
+    "sellQuantityMsg": {
+      "present_count": 74,
+      "nonempty_count": 74,
+      "types": {
+        "str": 74
+      },
+      "present_percent": 20.85,
+      "nonempty_percent": 20.85
+    },
+    "shortDescription": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "stock": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "strikeThroughPrice": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "float": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "topPromotion": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "dict": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "url": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "str": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    },
+    "volumePricesFlag": {
+      "present_count": 355,
+      "nonempty_count": 355,
+      "types": {
+        "bool": 355
+      },
+      "present_percent": 100.0,
+      "nonempty_percent": 100.0
+    }
+  }
+}

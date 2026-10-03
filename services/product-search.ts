@@ -16,10 +16,10 @@ import {
 import type { ConditionScorer } from "./condition-scorer"
 import {
   identityKey,
-  MockProductProvider,
   ProductProviderError,
 } from "./product-provider"
 import type { ProductProvider, RawProduct } from "./product-provider"
+import { createDefaultProductProvider } from "./watsons-product-provider"
 import { selectByPopularity } from "./popularity-ranker"
 import {
   applyStructuredFilters,
@@ -179,7 +179,11 @@ export function createProductSearch(
   return { searchProducts }
 }
 
-const defaultSearch = createProductSearch(new MockProductProvider())
+const defaultSearch = createProductSearch(
+  createDefaultProductProvider(),
+  createConfiguredConditionScorer(),
+  { recallLimit: 500 },
+)
 export const searchProducts = defaultSearch.searchProducts
 
 export function assertStructuredSearchInput(value: unknown): asserts value is StructuredSearchInput {
@@ -187,6 +191,7 @@ export function assertStructuredSearchInput(value: unknown): asserts value is St
       !Number.isSafeInteger(value.requirementVersion) || Number(value.requirementVersion) < 0 ||
       !isRecord(value.product_name) || !nonempty(value.product_name.value) ||
       value.product_name.value.length > 200 || !mustFlag(value.product_name.must) ||
+      !validAliases(value.product_name.aliases) ||
       !Array.isArray(value.range_conditions) || value.range_conditions.length > 50 ||
       !Array.isArray(value.include_keywords) || value.include_keywords.length > 50 ||
       !Array.isArray(value.exclude_keywords) || value.exclude_keywords.length > 50) {
@@ -202,11 +207,17 @@ export function assertStructuredSearchInput(value: unknown): asserts value is St
   }
   for (const group of [...value.include_keywords, ...value.exclude_keywords]) {
     if (!isRecord(group) || !mustFlag(group.must) || !Array.isArray(group.keywords) ||
+        !(group.scope === undefined || group.scope === "all" || group.scope === "ingredients") ||
         group.keywords.length < 1 || group.keywords.length > 20 ||
         !group.keywords.every((keyword) => nonempty(keyword) && keyword.length <= 100)) {
       throw new SearchValidationError("Invalid keyword condition")
     }
   }
+}
+
+function validAliases(value: unknown): boolean {
+  return value === undefined || Array.isArray(value) && value.length <= 20 &&
+    value.every((alias) => nonempty(alias) && alias.length <= 100)
 }
 
 function normalizeProduct(raw: RawProduct, warnings: string[]): Candidate {
