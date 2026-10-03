@@ -6,7 +6,7 @@ import { assertStructuredSearchInput, searchProducts } from "./product-search"
 import { assessCondition, buildScoringConditions } from "./search-filter"
 import { identityKey } from "./product-provider"
 
-/** Product suitability only. Shipping, payment authorization and live quotes belong to level 2. */
+/** Level-1 product check. Next call preparePaymentHandoff for order costs, then level 2 for authorization. */
 export function createProductSelection(
   search: (input: StructuredSearchInput) => Promise<RankedSearchResult> = searchProducts,
 ) {

@@ -195,7 +195,7 @@ export type HandoffProduct = Omit<Candidate, "url" | "offer"> & {
   } | null
 }
 
-/** Interface 2: exactly one product, never permission to pay or place an order. */
+/** Product check output; add orderAmount before handing off to level 2. */
 export type ProductHandoff = {
   taskId: string
   requirementVersion: number
@@ -242,8 +242,79 @@ export type PaymentRiskAuthorization = {
 
 /** Arguments for the level-2 risk team's function. */
 export type PaymentRiskRequest = {
-  selection: ProductHandoff
+  selection: PricedProductHandoff
   userAuthorization: PaymentRiskAuthorization
+}
+
+/** One order, one selected card. Monetary inputs are major units, never cents. */
+export type OrderPricingTerms = {
+  unitPriceHkd: number | null
+  shippingHkd: number | null
+  /** Additional order discount, excluding discounts already reflected in unitPriceHkd. */
+  orderDiscountHkd: number | null
+  paymentMethodId: string
+  eligible: boolean | null
+  billingCurrency: "HKD" | "CNY" | "USD" | "EUR" | "GBP" | "JPY"
+  /** Billing currency units per HKD; null is allowed only for HKD (rate 1). */
+  settlementRate: string | null
+  /** HKD per billing currency unit, a reference rate independent of card settlement. */
+  referenceRateToHkd: string | null
+  feePercent: number | null
+  /** Major units of billingCurrency, not HKD when using a foreign-currency card. */
+  fixedFeeBillingAmount: number | null
+  cardOffer: {
+    minSpendHkd: number
+    discountPercent: number
+    discountHkd: number
+    capHkd: number | null
+  } | null
+  /** Delayed cashback is informational; never reduces upfront charge. */
+  futureCashbackHkd: number | null
+}
+
+export type OrderPricingInput = ProductIdentity & {
+  taskId: string
+  requirementVersion: number
+  quantity: number
+  destination: string | null
+  /** Trusted quote/terms snapshot, with the oldest fetchedAt and earliest expiry of its inputs. */
+  pricing: Fact<OrderPricingTerms>
+}
+
+export type OrderAmount = {
+  currency: "HKD"
+  unitPriceHkd: number
+  itemsSubtotalHkd: number
+  shippingHkd: number
+  orderDiscountHkd: number
+  beforeCardDiscountHkd: number
+  cardDiscountHkd: number
+  merchantPayableHkd: number
+  /** Upfront debit including FX and fees, converted to HKD for level-2 limit checks. */
+  totalHkd: number
+  paymentMethodId: string
+  billingCurrency: OrderPricingTerms["billingCurrency"]
+  billingPrincipal: number
+  billingFee: number
+  billingTotal: number
+  settlementRate: string
+  referenceRateToHkd: string
+  futureCashbackHkd: number | null
+  checkedAt: string
+  validUntil: string
+  evidenceStatus: "mock" | "verified"
+  evidence: Fact<OrderPricingTerms>
+}
+
+export type PricedProductHandoff = ProductHandoff & { orderAmount: OrderAmount }
+
+export type PreparePaymentHandoffResult = {
+  taskId: string
+  requirementVersion: number
+  status: "ready" | "needs_verification" | "no_available_method" | "failed"
+  selection: PricedProductHandoff | null
+  reasons: string[]
+  error?: { code: SearchErrorCode; message: string }
 }
 
 export type PaymentRiskResult = {
