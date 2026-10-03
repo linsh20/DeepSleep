@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/index.test.ts"
+    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/index.test.ts",
+    "test": "node --test --experimental-strip-types lib/agent-b/index.test.ts tests/*.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

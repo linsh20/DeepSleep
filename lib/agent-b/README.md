@@ -2,6 +2,8 @@
 
 Agent B 只计算并返回结果，不修改主 Agent 的共享状态，也不执行购买。公共输入输出类型位于 `types/index.ts`。
 
+A/B 统一编排入口为 `services/shopping-agent.ts`，详见 [联调约定](../../docs/agent-integration.md)。续航字段统一使用 `batteryLifeHours`（小时），需求版本从 0 开始也受支持。
+
 ## 接口
 
 - `evaluateCandidates({ requirement, candidates }, options?)`

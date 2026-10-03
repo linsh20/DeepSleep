@@ -60,11 +60,19 @@ export function buildSearchPlan(requirement: Requirement): SearchPlan {
     currency: requirement.currency.toUpperCase(), budget: { ...requirement.budget },
     constraints, excludedProductIds: [...requirement.excludedProductIds],
     requiredFields: [...new Set([
-      ...constraints.map(({ field }) => field),
-      ...requirement.preferences.map(({ field }) => canonicalField(field)!),
+      ...constraints.flatMap(({ field }) => factDependencies(field)),
+      ...requirement.preferences.flatMap(({ field }) => factDependencies(canonicalField(field)!)),
     ])],
     destination: requirement.destination,
   }
+}
+
+function factDependencies(field: string): string[] {
+  if (field === "netItemPriceMinor") return ["offer.itemPriceMinor", "offer.discountMinor"]
+  if (field === "totalPrice" || field === "deliveredTotalMinor") {
+    return ["offer.itemPriceMinor", "offer.shippingMinor", "offer.discountMinor"]
+  }
+  return [field]
 }
 
 function warning(error: unknown): string {
@@ -219,7 +227,8 @@ export function createSearchAgent(provider: ProductProvider, options: { timeoutM
           (candidate.offer === null || record(candidate.offer)) && Array.isArray(candidate.missingFields) &&
           candidate.missingFields.every((field) => typeof field === "string")) ||
         !input.requests.every((request) => validIdentity(request) && typeof request.reason === "string" &&
-          Array.isArray(request.fields) && request.fields.every((field) => typeof field === "string" && !!canonicalField(field)))) {
+          Array.isArray(request.fields) && request.fields.every((field) =>
+            typeof field === "string" && /^(attributes|offer)\./.test(canonicalField(field) ?? "")))) {
       return result(requirement, [], "failed", [warning(new ProductProviderError("INVALID_INPUT", "Invalid verification request."))])
     }
     const candidates = structuredClone(input.candidates)

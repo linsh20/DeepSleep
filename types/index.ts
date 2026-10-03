@@ -145,3 +145,26 @@ export type AgentError = {
   retryable: boolean
   details?: string[]
 }
+
+export type ProductIdentity = Pick<Candidate, "productId" | "skuId" | "offerId">
+export type SearchErrorCode =
+  | "INVALID_INPUT" | "SOURCE_UNAVAILABLE" | "TIMEOUT" | "UNSUPPORTED_CATEGORY"
+export type SearchPlan = {
+  category: string
+  terms: string[]
+  currency: string
+  budget: Requirement["budget"]
+  constraints: Requirement["hardConstraints"]
+  excludedProductIds: string[]
+  requiredFields: string[]
+  destination?: string
+}
+
+export type ShoppingWorkflowResult = {
+  taskId: string
+  requirementVersion: number
+  search: SearchResult
+  evaluation: EvaluationResult
+  verificationRounds: number
+  stopReason: "ready" | "needsSearch" | "searchFailed" | "verificationLimit" | "noVerifiableFields"
+}

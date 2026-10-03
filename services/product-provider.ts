@@ -60,6 +60,8 @@ export function identityKey(identity: ProductIdentity): string {
 
 /** Bare attribute names are accepted; returned paths are always canonical. */
 export function canonicalField(field: string): string | null {
+  if (["totalPrice", "deliveredTotalMinor", "netItemPriceMinor"].includes(field)) return field
+  if (offerFields.some((key) => key === field)) return `offer.${field}`
   if (field.startsWith("offer.")) {
     return offerFields.some((key) => field === `offer.${key}`) ? field : null
   }
@@ -70,6 +72,14 @@ export function canonicalField(field: string): string | null {
 }
 
 function rawValue(product: RawProduct, field: string): AttributeValue | null {
+  if (["totalPrice", "deliveredTotalMinor", "netItemPriceMinor"].includes(field)) {
+    const offer = product.offer
+    if (!offer || offer.itemPriceMinor == null || offer.discountMinor == null ||
+        offer.discountMinor > offer.itemPriceMinor) return null
+    const shipping = field === "netItemPriceMinor" ? 0 : offer.shippingMinor
+    if (shipping == null) return null
+    return offer.itemPriceMinor - offer.discountMinor + shipping
+  }
   if (field.startsWith("attributes.")) return product.attributes[field.slice(11)] ?? null
   const key = field.slice(6) as typeof offerFields[number]
   return product.offer?.[key] ?? null

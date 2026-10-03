@@ -54,7 +54,7 @@ export const DEFAULT_FIELD_POLICIES: Readonly<Record<string, FieldPolicy>> = {
   performanceScore: { direction: "max", label: "性能" },
   ramGB: { direction: "max", label: "内存" },
   storageGB: { direction: "max", label: "存储" },
-  batteryHours: { direction: "max", label: "续航" },
+  batteryLifeHours: { direction: "max", label: "续航" },
   rating: { direction: "max", label: "口碑" },
 }
 
@@ -142,8 +142,11 @@ function validateFact(
     value.value !== null && !allowedValue(value.value),
     `${path}.value 类型无效`,
   )
-  pushIf(issues, !isNonEmptyString(value.source), `${path}.source 不能为空`)
-  pushIf(issues, !isIsoDate(value.fetchedAt), `${path}.fetchedAt 必须是 ISO 时间`)
+  // A failed lookup has no observed provenance; it is valid only for an unknown fact.
+  const unknownPlaceholder = value.value === null && value.status === "unverified" &&
+    value.source === "" && value.fetchedAt === ""
+  pushIf(issues, !unknownPlaceholder && !isNonEmptyString(value.source), `${path}.source 不能为空`)
+  pushIf(issues, !unknownPlaceholder && !isIsoDate(value.fetchedAt), `${path}.fetchedAt 必须是 ISO 时间`)
   pushIf(
     issues,
     !["verified", "unverified", "mock"].includes(String(value.status)),
@@ -160,8 +163,8 @@ export function assertRequirement(value: unknown): asserts value is Requirement 
   pushIf(issues, !isNonEmptyString(value.taskId), "taskId 不能为空")
   pushIf(
     issues,
-    !Number.isInteger(value.requirementVersion) || Number(value.requirementVersion) < 1,
-    "requirementVersion 必须是大于等于 1 的整数",
+    !Number.isSafeInteger(value.requirementVersion) || Number(value.requirementVersion) < 0,
+    "requirementVersion 必须是非负安全整数",
   )
   pushIf(issues, !isNonEmptyString(value.category), "category 不能为空")
   pushIf(issues, !isNonEmptyString(value.query), "query 不能为空")
@@ -729,7 +732,7 @@ function assertEvaluationResult(value: EvaluationResult): void {
   pushIf(issues, !isNonEmptyString(value.taskId), "输出 taskId 不能为空")
   pushIf(
     issues,
-    !Number.isInteger(value.requirementVersion) || value.requirementVersion < 1,
+    !Number.isSafeInteger(value.requirementVersion) || value.requirementVersion < 0,
     "输出 requirementVersion 无效",
   )
   pushIf(
@@ -1104,7 +1107,7 @@ function purchaseResult(
   pushIf(issues, !isNonEmptyString(result.taskId), "PurchaseCheck.taskId 不能为空")
   pushIf(
     issues,
-    !Number.isInteger(result.requirementVersion) || result.requirementVersion < 1,
+    !Number.isSafeInteger(result.requirementVersion) || result.requirementVersion < 0,
     "PurchaseCheck.requirementVersion 无效",
   )
   pushIf(

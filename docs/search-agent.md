@@ -1,5 +1,8 @@
 # Product search and data agent (A)
 
+Shared types now live in `types/index.ts`; `types/shopping.ts` re-exports them.
+See [A/B integration](agent-integration.md) for the server-side search/evaluate/verify workflow.
+
 This module recalls product facts. It does not parse user conversations, score
 recommendations, authorize purchases, or place orders. The homepage's product
 search panel uses these APIs through server-side route handlers. The legacy
