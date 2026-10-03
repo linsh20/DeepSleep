@@ -1,0 +1,373 @@
+[
+  {
+    "productId": "product-soundpro",
+    "skuId": "sku-soundpro-black",
+    "offerId": "offer-soundpro-black-store-a",
+    "title": "SoundPro Wireless Headphones",
+    "url": "https://example.invalid/products/soundpro",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 240,
+      "batteryLifeHours": 30,
+      "color": "black",
+      "wireless": true,
+      "brand": "soundpro"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 39900,
+      "shippingMinor": 2000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-soundpro",
+    "skuId": "sku-soundpro-black",
+    "offerId": "offer-soundpro-black-store-a",
+    "title": "SoundPro Wireless Headphones",
+    "url": "https://example.invalid/products/soundpro",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 240,
+      "batteryLifeHours": 30,
+      "color": "black",
+      "wireless": true,
+      "brand": "soundpro"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 39900,
+      "shippingMinor": 2000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-soundpro",
+    "skuId": "sku-soundpro-white",
+    "offerId": "offer-soundpro-white-store-a",
+    "title": "SoundPro Wireless Headphones White",
+    "url": "https://example.invalid/products/soundpro",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 240,
+      "batteryLifeHours": 30,
+      "color": "white",
+      "wireless": true,
+      "brand": "soundpro"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 40900,
+      "shippingMinor": 2000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-soundpro",
+    "skuId": "sku-soundpro-black",
+    "offerId": "offer-soundpro-black-store-b",
+    "title": "SoundPro Wireless Headphones",
+    "url": "https://example.invalid/products/soundpro",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 240,
+      "batteryLifeHours": 30,
+      "color": "black",
+      "wireless": true,
+      "brand": "soundpro"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 38900,
+      "shippingMinor": 3500,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-audiomax",
+    "skuId": "sku-audiomax-black",
+    "offerId": "offer-audiomax-black-store-a",
+    "title": "AudioMax Wireless Headphones",
+    "url": "https://example.invalid/products/audiomax",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 260,
+      "batteryLifeHours": 40,
+      "color": "black",
+      "wireless": true,
+      "brand": "audiomax"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 45900,
+      "shippingMinor": 1500,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-premium",
+    "skuId": "sku-premium-black",
+    "offerId": "offer-premium-black-store-a",
+    "title": "Premium Wireless Headphones",
+    "url": "https://example.invalid/products/premium",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 280,
+      "batteryLifeHours": 50,
+      "color": "black",
+      "wireless": true,
+      "brand": "premium"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 48000,
+      "shippingMinor": 4000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-studio",
+    "skuId": "sku-studio-black",
+    "offerId": "offer-studio-black-store-a",
+    "title": "Studio Wireless Headphones",
+    "url": "https://example.invalid/products/studio",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 310,
+      "batteryLifeHours": 60,
+      "color": "black",
+      "wireless": true,
+      "brand": "studio"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 89900,
+      "shippingMinor": 0,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-light",
+    "skuId": "sku-light-blue",
+    "offerId": "offer-light-blue-store-a",
+    "title": "Light Wireless Headphones",
+    "url": "https://example.invalid/products/light",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": null,
+      "batteryLifeHours": 24,
+      "color": "blue",
+      "wireless": true,
+      "brand": "light"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 29900,
+      "shippingMinor": 1000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    },
+    "details": {
+      "attributes": {
+        "weightGrams": 180
+      }
+    }
+  },
+  {
+    "productId": "product-travel",
+    "skuId": "sku-travel-black",
+    "offerId": "offer-travel-black-store-a",
+    "title": "Travel Wireless Headphones",
+    "url": "https://example.invalid/products/travel",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 220,
+      "batteryLifeHours": null,
+      "color": "black",
+      "wireless": true,
+      "brand": "travel"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 34900,
+      "shippingMinor": 2000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    },
+    "details": {
+      "attributes": {
+        "batteryLifeHours": 32
+      }
+    }
+  },
+  {
+    "productId": "product-soldout",
+    "skuId": "sku-soldout-black",
+    "offerId": "offer-soldout-black-store-a",
+    "title": "Classic Wireless Headphones",
+    "url": "https://example.invalid/products/soldout",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 210,
+      "batteryLifeHours": 20,
+      "color": "black",
+      "wireless": true,
+      "brand": "soldout"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 19900,
+      "shippingMinor": 0,
+      "discountMinor": 0,
+      "stock": "unavailable",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-unknown",
+    "skuId": "sku-unknown-black",
+    "offerId": "offer-unknown-black-store-a",
+    "title": "Mystery Wireless Headphones",
+    "url": "https://example.invalid/products/unknown",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": null,
+      "batteryLifeHours": null,
+      "color": "black",
+      "wireless": true,
+      "brand": "unknown"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 25900,
+      "shippingMinor": null,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": null
+    }
+  },
+  {
+    "productId": "product-speaker",
+    "skuId": "sku-speaker-mini",
+    "offerId": "offer-speaker-mini-store-a",
+    "title": "Pocket Bluetooth Speaker",
+    "url": "https://example.invalid/products/speaker",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 400,
+      "batteryLifeHours": 12,
+      "color": "mini",
+      "wireless": true,
+      "brand": "speaker"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 15900,
+      "shippingMinor": 1500,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-keyboard",
+    "skuId": "sku-keyboard-us",
+    "offerId": "offer-keyboard-us-store-a",
+    "title": "Wireless Mechanical Keyboard",
+    "url": "https://example.invalid/products/keyboard",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 800,
+      "batteryLifeHours": 100,
+      "color": "us",
+      "wireless": true,
+      "brand": "keyboard"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 59900,
+      "shippingMinor": 0,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-powerbank",
+    "skuId": "sku-powerbank-10k",
+    "offerId": "offer-powerbank-10k-store-a",
+    "title": "USB Power Bank",
+    "url": "https://example.invalid/products/powerbank",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 190,
+      "batteryLifeHours": null,
+      "color": "10k",
+      "wireless": false,
+      "brand": "powerbank"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 14900,
+      "shippingMinor": 1000,
+      "discountMinor": 0,
+      "stock": "available",
+      "deliverable": true
+    }
+  },
+  {
+    "productId": "product-catalog",
+    "skuId": null,
+    "offerId": null,
+    "title": "Upcoming Wireless Headphones",
+    "url": "https://example.invalid/products/catalog",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": null,
+      "batteryLifeHours": null,
+      "color": null,
+      "wireless": true,
+      "brand": "catalog"
+    },
+    "offer": null
+  },
+  {
+    "productId": "product-discount",
+    "skuId": "sku-discount-black",
+    "offerId": "offer-discount-black-store-a",
+    "title": "Value Wireless Headphones",
+    "url": "https://example.invalid/products/discount",
+    "category": "Electronics",
+    "attributes": {
+      "weightGrams": 230,
+      "batteryLifeHours": 35,
+      "color": "black",
+      "wireless": true,
+      "brand": "discount"
+    },
+    "offer": {
+      "currency": "HKD",
+      "itemPriceMinor": 52000,
+      "shippingMinor": 2000,
+      "discountMinor": 10000,
+      "stock": "available",
+      "deliverable": false
+    }
+  }
+]
