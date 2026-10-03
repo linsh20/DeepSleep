@@ -1,0 +1,247 @@
+{
+  "checkedAt": "2026-10-03T10:01:15.213Z",
+  "endpoint": "https://api.bigbigapi.com/chat/completions",
+  "model": "gpt-6.1-sol-plus",
+  "dataEnvironment": "development_mock",
+  "turns": [
+    {
+      "message": "比较乳液，1件，100到300ml正装，总预算200港币含运费，配送香港，希望保湿。",
+      "reply": "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。",
+      "version": 1,
+      "status": "result_ready",
+      "intent": "compare",
+      "shoppingRequest": {
+        "requirement": {
+          "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+          "requirementVersion": 1,
+          "category": "乳液",
+          "query": "乳液",
+          "currency": "HKD",
+          "destination": "香港",
+          "budget": {
+            "maxMinor": 20000,
+            "scope": "delivered"
+          },
+          "hardConstraints": [
+            {
+              "field": "attributes.packageType",
+              "op": "eq",
+              "value": "regular"
+            },
+            {
+              "field": "attributes.volumeMl",
+              "op": "gte",
+              "value": 100
+            },
+            {
+              "field": "attributes.volumeMl",
+              "op": "lte",
+              "value": 300
+            }
+          ],
+          "preferences": [
+            {
+              "field": "text.searchable",
+              "weight": 1,
+              "source": "explicit",
+              "conditions": [
+                {
+                  "field": "text.searchable",
+                  "op": "containsAny",
+                  "value": [
+                    "保湿"
+                  ]
+                }
+              ]
+            }
+          ],
+          "excludedProductIds": []
+        },
+        "quantity": 1
+      },
+      "searches": 1
+    },
+    {
+      "message": "容量改成200到300ml，其他不变。",
+      "reply": "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。",
+      "version": 2,
+      "status": "result_ready",
+      "intent": "compare",
+      "shoppingRequest": {
+        "requirement": {
+          "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+          "requirementVersion": 2,
+          "category": "乳液",
+          "query": "乳液",
+          "currency": "HKD",
+          "destination": "香港",
+          "budget": {
+            "maxMinor": 20000,
+            "scope": "delivered"
+          },
+          "hardConstraints": [
+            {
+              "field": "attributes.packageType",
+              "op": "eq",
+              "value": "regular"
+            },
+            {
+              "field": "attributes.volumeMl",
+              "op": "gte",
+              "value": 200
+            },
+            {
+              "field": "attributes.volumeMl",
+              "op": "lte",
+              "value": 300
+            }
+          ],
+          "preferences": [
+            {
+              "field": "text.searchable",
+              "weight": 1,
+              "source": "explicit",
+              "conditions": [
+                {
+                  "field": "text.searchable",
+                  "op": "containsAny",
+                  "value": [
+                    "保湿"
+                  ]
+                }
+              ]
+            }
+          ],
+          "excludedProductIds": []
+        },
+        "quantity": 1
+      },
+      "searches": 2
+    },
+    {
+      "message": "容量不限，预算改成180。",
+      "reply": "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。",
+      "version": 3,
+      "status": "result_ready",
+      "intent": "compare",
+      "shoppingRequest": {
+        "requirement": {
+          "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+          "requirementVersion": 3,
+          "category": "乳液",
+          "query": "乳液",
+          "currency": "HKD",
+          "destination": "香港",
+          "budget": {
+            "maxMinor": 18000,
+            "scope": "delivered"
+          },
+          "hardConstraints": [
+            {
+              "field": "attributes.packageType",
+              "op": "eq",
+              "value": "regular"
+            }
+          ],
+          "preferences": [
+            {
+              "field": "text.searchable",
+              "weight": 1,
+              "source": "explicit",
+              "conditions": [
+                {
+                  "field": "text.searchable",
+                  "op": "containsAny",
+                  "value": [
+                    "保湿"
+                  ]
+                }
+              ]
+            }
+          ],
+          "excludedProductIds": []
+        },
+        "quantity": 1
+      },
+      "searches": 3
+    },
+    {
+      "message": "保湿必须满足。",
+      "reply": "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。",
+      "version": 4,
+      "status": "result_ready",
+      "intent": "compare",
+      "shoppingRequest": {
+        "requirement": {
+          "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+          "requirementVersion": 4,
+          "category": "乳液",
+          "query": "乳液",
+          "currency": "HKD",
+          "destination": "香港",
+          "budget": {
+            "maxMinor": 18000,
+            "scope": "delivered"
+          },
+          "hardConstraints": [
+            {
+              "field": "attributes.packageType",
+              "op": "eq",
+              "value": "regular"
+            },
+            {
+              "field": "text.searchable",
+              "op": "containsAny",
+              "value": [
+                "保湿"
+              ]
+            }
+          ],
+          "preferences": [],
+          "excludedProductIds": []
+        },
+        "quantity": 1
+      },
+      "searches": 4
+    },
+    {
+      "message": "不要限定品牌。",
+      "reply": "已返回 development_mock 模拟方案，商品事实未核验。购买执行尚未接入。",
+      "version": 4,
+      "status": "result_ready",
+      "intent": "compare",
+      "shoppingRequest": {
+        "requirement": {
+          "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+          "requirementVersion": 4,
+          "category": "乳液",
+          "query": "乳液",
+          "currency": "HKD",
+          "destination": "香港",
+          "budget": {
+            "maxMinor": 18000,
+            "scope": "delivered"
+          },
+          "hardConstraints": [
+            {
+              "field": "attributes.packageType",
+              "op": "eq",
+              "value": "regular"
+            },
+            {
+              "field": "text.searchable",
+              "op": "containsAny",
+              "value": [
+                "保湿"
+              ]
+            }
+          ],
+          "preferences": [],
+          "excludedProductIds": []
+        },
+        "quantity": 1
+      },
+      "searches": 4
+    }
+  ]
+}

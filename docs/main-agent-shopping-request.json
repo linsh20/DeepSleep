@@ -1,0 +1,49 @@
+{
+  "requirement": {
+    "taskId": "f53abee5-5c90-4523-9672-2684313473ce",
+    "requirementVersion": 1,
+    "category": "乳液",
+    "query": "乳液",
+    "currency": "HKD",
+    "destination": "香港",
+    "budget": {
+      "maxMinor": 20000,
+      "scope": "delivered"
+    },
+    "hardConstraints": [
+      {
+        "field": "attributes.packageType",
+        "op": "eq",
+        "value": "regular"
+      },
+      {
+        "field": "attributes.volumeMl",
+        "op": "gte",
+        "value": 100
+      },
+      {
+        "field": "attributes.volumeMl",
+        "op": "lte",
+        "value": 300
+      }
+    ],
+    "preferences": [
+      {
+        "field": "text.searchable",
+        "weight": 1,
+        "source": "explicit",
+        "conditions": [
+          {
+            "field": "text.searchable",
+            "op": "containsAny",
+            "value": [
+              "保湿"
+            ]
+          }
+        ]
+      }
+    ],
+    "excludedProductIds": []
+  },
+  "quantity": 1
+}

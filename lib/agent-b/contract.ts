@@ -50,6 +50,9 @@ function validate(input: ContractEvaluationInput, policy: ContractBPolicy) {
   requireValid(Number.isFinite(ratio) && ratio > 0 && ratio < 1, "lowPriceRatio 必须介于 0 和 1")
   if (policy.attributeSchema) requireValid(record(policy.attributeSchema) && Object.entries(policy.attributeSchema).every(([k,v]) => /^[a-zA-Z][a-zA-Z0-9]*$/.test(k) && ["number", "string", "boolean"].includes(v)), "attributeSchema 无效")
   if (policy.categoryAliases) requireValid(record(policy.categoryAliases) && Object.values(policy.categoryAliases).every(nonempty), "categoryAliases 无效")
+  requireValid(policy.searchOnly === undefined || typeof policy.searchOnly === "boolean", "searchOnly 无效")
+  if (policy.textAliases) requireValid(record(policy.textAliases) && Object.values(policy.textAliases).every(v => Array.isArray(v) && v.every(nonempty)), "textAliases 无效")
+  if (policy.broadCategories) requireValid(Array.isArray(policy.broadCategories) && policy.broadCategories.every(nonempty), "broadCategories 无效")
   const r = input.requirement
   // Reuse base shape validation, while validating new constraints and relative weights below.
   assertRequirement({ ...r, allowAlternativeProducts: undefined, hardConstraints: [], preferences: [] })
@@ -153,9 +156,10 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
     }
   }
   if (policy.dataEnvironment === "development_mock") warnings.add("development_mock：仅模拟匹配，不能用于真实购买")
+  if (!policy.merchantAllowlist.length) warnings.add("服务端尚无可信商户白名单：不能推荐或执行，需核验商户来源与配置。")
   if (input.searchStatus === "partial") warnings.add("部分来源不可用；结论仅覆盖当前已获取候选")
   const aliases = policy.categoryAliases ?? {}
-  const category = (s: string) => normalize(aliases[normalize(s)] ?? s)
+  const category = (s: string) => normalize(Object.hasOwn(aliases,normalize(s)) ? aliases[normalize(s)] : s)
   const usable = (c: ShoppingCandidate, path: string): number | string | boolean | null => {
     const f = factAt(c, path)
     if (!f || f.value === null || f.status === "unverified") return null
@@ -168,6 +172,7 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
   const check = (id: string, value: boolean | null, fields: string[], reason: string): ConditionCheck => ({
     conditionId: id, outcome: value === null ? "unknown" : value ? "match" : "mismatch", evidenceFields: fields, reason,
   })
+  const words = (word: string) => [word, ...(policy.textAliases && Object.hasOwn(policy.textAliases,normalize(word)) ? policy.textAliases[normalize(word)] : [])]
   const matches = (c: ShoppingCandidate, cond: Constraint): boolean | null => {
     const value = usable(c, cond.field)
     if (value === null) return null
@@ -177,8 +182,8 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
       case "gte": return Number(value) >= Number(cond.value)
       case "in": return (cond.value as string[]).some(x => normalize(x) === normalize(String(value)))
       case "notIn": return !(cond.value as string[]).some(x => normalize(x) === normalize(String(value)))
-      case "containsAny": return (cond.value as string[]).some(x => normalize(String(value)).includes(normalize(x)))
-      case "notContainsAny": return !(cond.value as string[]).some(x => normalize(String(value)).includes(normalize(x)))
+      case "containsAny": return (cond.value as string[]).some(x => words(x).some(w => normalize(String(value)).includes(normalize(w))))
+      case "notContainsAny": return !(cond.value as string[]).some(x => words(x).some(w => normalize(String(value)).includes(normalize(w))))
     }
   }
   const and = (values: (boolean | null)[]) => values.includes(false) ? false : values.includes(null) ? null : true
@@ -188,7 +193,7 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
     const add = (id: string, v: boolean | null, fields: string[], reason: string) => checks.push(check(`system:${id}`, v, fields, reason))
     add("identity", c.skuId && c.offerId ? true : null, [], "需要明确 SKU 和 Offer")
     const cat = usable(c, "attributes.category")
-    add("category", cat === null ? null : category(String(cat)) === category(r.category), ["attributes.category"], "商品类别必须符合需求")
+    add("category", cat === null ? null : category(String(cat)) === category(r.category) ? true : policy.broadCategories?.map(normalize).includes(normalize(String(cat))) ? null : false, ["attributes.category"], "商品类别必须符合需求")
     add("currency", c.offer ? c.offer.currency === r.currency : null, ["offer.currency"], "币种必须一致")
     add("excluded", !r.excludedProductIds.includes(c.productId), [], "遵守用户商品排除列表")
     const context = !!c.quote && c.quote.quantity === quantity && normalize(c.quote.destination) === normalize(r.destination!)
@@ -246,7 +251,7 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
       ...(ranked.some(x => x !== ranked[0] && x.audit.scoreUpperBound !== null && x.audit.scoreUpperBound >= (audit.scoreLowerBound ?? 0)) ? ["偏好分数区间重叠，不能断言必然最佳"] : [])],
   }))
   const configurationMissing = !policy.merchantAllowlist.length
-  const status: ContractBResult["status"] = conflictingRequirement || configurationMissing || input.searchStatus === "failed" ? "failed" : recommendations.length ? "result_ready" : audits.some(a => a.disposition === "needs_verification") ? "needs_verification" : "no_match"
+  const status: ContractBResult["status"] = conflictingRequirement || (configurationMissing && !policy.searchOnly) || input.searchStatus === "failed" ? "failed" : recommendations.length && !configurationMissing ? "result_ready" : audits.some(a => a.disposition === "needs_verification") ? "needs_verification" : "no_match"
   const verificationRequests = audits.filter(a => a.disposition !== "rejected").flatMap(a => {
     const fields = [...new Set([...a.checks, ...a.preferenceChecks].filter(x => x.outcome === "unknown").flatMap(x => x.evidenceFields))]
     return fields.length ? [{ productId: a.productId, skuId: a.skuId, offerId: a.offerId, fields, reason: "补查未知、过期或存在矛盾的事实，并保持报价上下文一致" }] : []
@@ -289,7 +294,7 @@ export async function evaluateShoppingCandidates(raw: ContractEvaluationInput, p
     candidates: input.candidates, recommendations: selected ? recommendations : [], decisionRecord,
     ...(paymentOptimization ? { paymentOptimization } : {}),
     diagnostics: { searchStatus: input.searchStatus, countUnit: "offer", candidateChecks: audits, filterLogs: [...logs.values()], verificationRequests,
-      warnings: [...warnings], nextAction: conflictingRequirement ? "clarify" : configurationMissing ? "resolve_configuration" : status === "needs_verification" ? "verify" : status === "no_match" ? "search" : "none" },
+      warnings: [...warnings], nextAction: conflictingRequirement ? "clarify" : configurationMissing && !policy.searchOnly ? "resolve_configuration" : status === "needs_verification" ? "verify" : status === "no_match" ? "search" : "none" },
     ...(status === "failed" ? {error: {code: conflictingRequirement ? "INVALID_INPUT" as const : "SOURCE_UNAVAILABLE" as const, message: conflictingRequirement ? "用户硬条件互相矛盾" : configurationMissing ? "服务端未配置渠道白名单" : "全部数据源不可用", retryable: !configurationMissing && !conflictingRequirement}} : {}),
   }
   if (selected) {

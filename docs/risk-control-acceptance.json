@@ -1,0 +1,118 @@
+[
+  {
+    "provider": "controlled_test_double",
+    "decision": {
+      "policyVersion": "limited-sandbox-v1",
+      "decisionId": "61bbc029-6500-431b-9bd4-ab16a0209ab2",
+      "operationId": "d5906332-4173-4250-a51f-fdd796366366",
+      "decision": "approve",
+      "hits": [],
+      "at": 1791079200000,
+      "authorizationId": "a2140a8f-2b00-4201-ba16-8890e7a9a674",
+      "authorizationVersion": 1,
+      "projectedMinor": 18000,
+      "spentMinor": 0,
+      "reservedMinor": 0,
+      "confirmationId": null
+    },
+    "operation": {
+      "operationId": "d5906332-4173-4250-a51f-fdd796366366",
+      "requirementVersion": 1,
+      "paymentId": "pi_d590633241734250a51ffdd796366366",
+      "paymentStatus": "succeeded",
+      "errorCode": null,
+      "testPermission": {
+        "kind": "one_sandbox_test",
+        "grantedAt": 1791079200000,
+        "planId": "37df15d5-b02f-42b6-a8a1-613e6fc22afa"
+      },
+      "busy": false
+    },
+    "reservations": [
+      {
+        "operation_id": "d5906332-4173-4250-a51f-fdd796366366",
+        "amount": 18000,
+        "month": "2026-10",
+        "state": "spent",
+        "at": 1791079200000,
+        "settled_at": 1791079200000
+      }
+    ]
+  },
+  {
+    "provider": "controlled_test_double",
+    "decision": {
+      "policyVersion": "limited-sandbox-v1",
+      "decisionId": "1bed8aa8-d85d-4f16-b9d8-e188e46c8fda",
+      "operationId": "074dca87-07c3-481a-bd8f-620f7e1a8ede",
+      "decision": "hold",
+      "hits": [
+        {
+          "rule": "R2-soft",
+          "severity": "hold",
+          "reason": "本次总额超过单笔软上限",
+          "exit": "仅可确认本次明确金额的软限额例外"
+        }
+      ],
+      "at": 1791079200000,
+      "authorizationId": "3e56d1fc-6c4a-4289-b52f-bf93a3be1946",
+      "authorizationVersion": 1,
+      "projectedMinor": 18000,
+      "spentMinor": 0,
+      "reservedMinor": 0,
+      "confirmationId": "d16f48d0-674e-4baf-a687-892397af589a"
+    },
+    "operation": {
+      "operationId": "074dca87-07c3-481a-bd8f-620f7e1a8ede",
+      "requirementVersion": 1,
+      "paymentId": null,
+      "paymentStatus": "not_started",
+      "errorCode": "RISK_HOLD",
+      "testPermission": {
+        "kind": "one_sandbox_test",
+        "grantedAt": 1791079200000,
+        "planId": "32c5a7f0-5273-421a-855a-353190696ece"
+      },
+      "busy": false
+    },
+    "reservations": []
+  },
+  {
+    "provider": "controlled_test_double",
+    "decision": {
+      "policyVersion": "limited-sandbox-v1",
+      "decisionId": "104ef932-b423-4f15-81d4-39a4dbbf4b47",
+      "operationId": "47ca69e5-158a-4b1f-b67d-4a927bd16dce",
+      "decision": "block",
+      "hits": [
+        {
+          "rule": "R2-hard",
+          "severity": "block",
+          "reason": "本次总额超过单笔硬上限",
+          "exit": "请查看当前任务、报价及授权；更正后重新检查，不能用确认跳过拦截"
+        }
+      ],
+      "at": 1791079200000,
+      "authorizationId": "9fb806f7-18de-47a4-84bd-d26f96496eaf",
+      "authorizationVersion": 1,
+      "projectedMinor": 18000,
+      "spentMinor": 0,
+      "reservedMinor": 0,
+      "confirmationId": null
+    },
+    "operation": {
+      "operationId": "47ca69e5-158a-4b1f-b67d-4a927bd16dce",
+      "requirementVersion": 1,
+      "paymentId": null,
+      "paymentStatus": "not_started",
+      "errorCode": "RISK_BLOCK",
+      "testPermission": {
+        "kind": "one_sandbox_test",
+        "grantedAt": 1791079200000,
+        "planId": "9dd51c28-f169-45b9-b02b-bdcdb9ce75f1"
+      },
+      "busy": false
+    },
+    "reservations": []
+  }
+]

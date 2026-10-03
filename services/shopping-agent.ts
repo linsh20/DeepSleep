@@ -55,7 +55,7 @@ export function createShoppingAgent(
   limits: Parameters<typeof createContractShoppingAgent>[2] = {},
 ) {
   return {
-    async runShoppingTask(raw: ShoppingAgentRequest): Promise<ShoppingAgentResult> {
+    async runShoppingTask(raw: ShoppingAgentRequest, context?: { signal: AbortSignal }): Promise<ShoppingAgentResult> {
       const request = structuredClone(raw)
       if (!request?.requirement) throw new AgentBValidationError("缺少需求", ["requirement 必填"])
       const r = request.requirement
@@ -93,7 +93,7 @@ export function createShoppingAgent(
       }
       const result = await createContractShoppingAgent(port, policy, limits).run({
         requirement: r, quantity: request.quantity, paymentContext: request.paymentContext, sourceSearchInput: searchInput,
-      })
+      }, context)
       return { ...result, search }
     },
   }

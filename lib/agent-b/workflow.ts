@@ -16,20 +16,26 @@ export function createContractShoppingAgent(
     throw new AgentBValidationError("编排配置无效", ["超时、候选池和批量大小必须为正整数，补查轮数为 0..2"])
   }
   return {
-    async run(input: {requirement: Requirement; quantity: number; paymentContext?: PaymentContext; sourceSearchInput?: StructuredSearchInput}): Promise<ContractWorkflowResult> {
+    async run(input: {requirement: Requirement; quantity: number; paymentContext?: PaymentContext; sourceSearchInput?: StructuredSearchInput}, context?: { signal: AbortSignal }): Promise<ContractWorkflowResult> {
+      context?.signal.throwIfAborted()
       const { paymentContext, sourceSearchInput, ...request } = structuredClone(input)
       const warnings: string[] = []
       const execute = async (call: (signal: AbortSignal) => Promise<SearchResult>): Promise<SearchResult> => {
         const controller = new AbortController()
+        const signal = context?.signal ? AbortSignal.any([controller.signal, context.signal]) : controller.signal
+        signal.throwIfAborted()
+        let abort: (() => void) | undefined
         let timer: ReturnType<typeof setTimeout> | undefined
         try {
-          const result = await Promise.race([Promise.resolve().then(() => call(controller.signal)), new Promise<never>((_,reject) => {
+          const result = await Promise.race([Promise.resolve().then(() => { signal.throwIfAborted(); return call(signal) }), new Promise<never>((_,reject) => {
+            abort = () => reject(new Error("TIMEOUT"))
+            signal.addEventListener("abort", abort, { once: true })
             timer = setTimeout(() => { controller.abort(); reject(new Error("TIMEOUT")) },timeout)
           })])
           if (result.taskId !== request.requirement.taskId || result.requirementVersion !== request.requirement.requirementVersion) throw new AgentBValidationError("A 返回了旧任务结果", ["taskId/requirementVersion 不匹配"])
           warnings.push(...result.warnings)
           return structuredClone(result)
-        } finally { if (timer) clearTimeout(timer) }
+        } finally { if (timer) clearTimeout(timer); if (abort) signal.removeEventListener("abort", abort) }
       }
       // Validate request before invoking A, without inventing candidate facts.
       const preflight = await evaluateShoppingCandidates({...request, paymentContext, sourceSearchInput, candidates:[], searchStatus:"complete", sourceTaskId:request.requirement.taskId, sourceRequirementVersion:request.requirement.requirementVersion}, policy)
@@ -44,6 +50,7 @@ export function createContractShoppingAgent(
       }
       if (search.candidates.length > pool) throw new AgentBValidationError("A 超过候选池上限", ["请遵守服务端 limit"])
       const evaluate = () => evaluateShoppingCandidates({...request,paymentContext,sourceSearchInput,candidates:search.candidates,searchStatus:search.status,sourceTaskId:search.taskId,sourceRequirementVersion:search.requirementVersion},policy)
+      context?.signal.throwIfAborted()
       let result = await evaluate()
       let verificationRounds = 0
       let stopReason: ContractWorkflowResult["stopReason"] = "completed"
@@ -51,6 +58,7 @@ export function createContractShoppingAgent(
       const progress = () => JSON.stringify({candidates:search.candidates,checks:result.diagnostics.candidateChecks},
         (key,value) => ["fetchedAt","validUntil"].includes(key) ? undefined : value)
       while (result.status === "needs_verification" && verificationRounds < rounds) {
+        context?.signal.throwIfAborted()
         const requests = result.diagnostics.verificationRequests.slice(0,batch)
         if (!requests.length) { stopReason = "no_verifiable_fields"; break }
         const before = progress()

@@ -1,0 +1,538 @@
+{
+  "watsons": {
+    "input": {
+      "requirement": {
+        "taskId": "integration-main",
+        "requirementVersion": 1,
+        "category": "乳液",
+        "query": "乳液",
+        "currency": "HKD",
+        "destination": "香港",
+        "budget": {
+          "maxMinor": 20000,
+          "scope": "delivered"
+        },
+        "hardConstraints": [
+          {
+            "id": "min",
+            "field": "attributes.volumeMl",
+            "op": "gte",
+            "value": 100
+          },
+          {
+            "id": "max",
+            "field": "attributes.volumeMl",
+            "op": "lte",
+            "value": 300
+          }
+        ],
+        "preferences": [
+          {
+            "id": "moisture",
+            "field": "text.searchable",
+            "weight": 1,
+            "source": "explicit",
+            "conditions": [
+              {
+                "field": "text.searchable",
+                "op": "containsAny",
+                "value": [
+                  "保湿"
+                ]
+              }
+            ]
+          }
+        ],
+        "excludedProductIds": []
+      },
+      "quantity": 1
+    },
+    "searchInput": {
+      "taskId": "integration-main",
+      "requirementVersion": 1,
+      "useLlm": false,
+      "product_name": {
+        "value": "lotion",
+        "aliases": [
+          "乳液",
+          "emulsion"
+        ],
+        "must": 1
+      },
+      "range_conditions": [
+        {
+          "field": "volumeMl",
+          "min": 100,
+          "max": 300,
+          "must": 1
+        }
+      ],
+      "include_keywords": [
+        {
+          "keywords": [
+            "保湿",
+            "moisturizing",
+            "moisturising",
+            "hydrating"
+          ],
+          "must": 0,
+          "scope": "all"
+        }
+      ],
+      "exclude_keywords": []
+    },
+    "translation": {
+      "dictionaryVersion": "en-hk-v1",
+      "originalQuery": "乳液",
+      "originalCategory": "乳液",
+      "mappings": [
+        {
+          "original": "乳液",
+          "aliases": [
+            "lotion",
+            "emulsion"
+          ]
+        },
+        {
+          "original": "保湿",
+          "aliases": [
+            "moisturizing",
+            "moisturising",
+            "hydrating"
+          ]
+        }
+      ],
+      "retainedForB": [],
+      "warnings": [
+        "整单预算保留给 B 按数量和报价审核，不转换为召回单价上限。"
+      ]
+    },
+    "status": "needs_verification",
+    "dataEnvironment": "verified_sources",
+    "candidateCount": 10,
+    "sampleCandidates": [
+      {
+        "productId": "watsons-product:BP_241376",
+        "skuId": "watsons-sku:241376",
+        "offerId": "watsons-offer-hk:BP_241376:241376",
+        "title": "SH LOTION (LIGHT) 170ml",
+        "url": "https://www.watsons.com.hk/hada-labo-sh-lotion-light-170ml/p/BP_241376",
+        "category": "Toner",
+        "searchableText": {
+          "description": {
+            "value": "A light, refreshing lotion with 5 types of hyaluronic acids in perfect ratio to absorb, lock-in, store and replenish water.",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "ingredients": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "brand": {
+            "value": "HADA LABO",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "categoryPath": {
+            "value": "Skin Care/Face Treatment/Toner",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "attributes": {
+          "volumeMl": {
+            "value": 170,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "packSize": {
+            "value": "170ml",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "rating": {
+            "value": 4.873015873015873,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "reviewCount": {
+            "value": 63,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "salesCount": {
+            "value": 36,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "listPriceMinor": {
+            "value": 13500,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "category": {
+            "value": "Toner",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "productName": {
+            "value": "SH LOTION (LIGHT) 170ml",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "brand": {
+            "value": "HADA LABO",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "offer": {
+          "currency": "HKD",
+          "itemPriceMinor": {
+            "value": 13500,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "shippingMinor": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "discountMinor": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "stock": {
+            "value": "available",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "deliverable": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "missingFields": [
+          "offer.deliverable",
+          "offer.discountMinor",
+          "offer.shippingMinor",
+          "searchableText.ingredients",
+          "merchant",
+          "quote",
+          "text.searchable"
+        ],
+        "text": {
+          "searchable": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192Z",
+            "status": "verified"
+          }
+        }
+      },
+      {
+        "productId": "watsons-product:BP_807699",
+        "skuId": "watsons-sku:807699",
+        "offerId": "watsons-offer-hk:BP_807699:807699",
+        "title": "1025 DOKDO LOTION 200ML",
+        "url": "https://www.watsons.com.hk/round-lab-1025-dokdo-lotion-200ml/p/BP_807699",
+        "category": "Moisturizer",
+        "searchableText": {
+          "description": {
+            "value": "1025 DOKDO LOTION 200ML",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "ingredients": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "brand": {
+            "value": "ROUND LAB",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "categoryPath": {
+            "value": "Skin Care/Face Treatment/Moisturizer",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "attributes": {
+          "volumeMl": {
+            "value": 200,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "packSize": {
+            "value": "200ML",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "rating": {
+            "value": 5,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "reviewCount": {
+            "value": 2,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "salesCount": {
+            "value": 18,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "listPriceMinor": {
+            "value": 14800,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "category": {
+            "value": "Moisturizer",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "productName": {
+            "value": "1025 DOKDO LOTION 200ML",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "brand": {
+            "value": "ROUND LAB",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "offer": {
+          "currency": "HKD",
+          "itemPriceMinor": {
+            "value": 7900,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "shippingMinor": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "discountMinor": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "stock": {
+            "value": "available",
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          },
+          "deliverable": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192967+00:00",
+            "status": "verified"
+          }
+        },
+        "missingFields": [
+          "offer.deliverable",
+          "offer.discountMinor",
+          "offer.shippingMinor",
+          "searchableText.ingredients",
+          "merchant",
+          "quote",
+          "text.searchable"
+        ],
+        "text": {
+          "searchable": {
+            "value": null,
+            "source": "watsons-hk-api-snapshot",
+            "fetchedAt": "2026-10-03T12:45:06.192Z",
+            "status": "verified"
+          }
+        }
+      }
+    ],
+    "missingFacts": [
+      "attributes.category",
+      "quote.quantity",
+      "quote.destination",
+      "offer.itemPriceMinor",
+      "offer.discountMinor",
+      "offer.shippingMinor",
+      "quote.otherFeesMinor",
+      "quote.totalMinor",
+      "offer.stock",
+      "offer.deliverable",
+      "merchant.platformId",
+      "text.searchable"
+    ],
+    "searchStatus": "partial",
+    "stopReason": "no_progress",
+    "recommendations": []
+  },
+  "http": {
+    "taskId": "a024d02d-d339-4d77-9fb8-32eddc4a2be0",
+    "status": "needs_verification",
+    "version": 1,
+    "resultKind": "shopping_contract_v1",
+    "candidates": 10,
+    "missingFacts": [
+      "attributes.category",
+      "quote.quantity",
+      "quote.destination",
+      "offer.itemPriceMinor",
+      "offer.discountMinor",
+      "offer.shippingMinor",
+      "quote.otherFeesMinor",
+      "quote.totalMinor",
+      "offer.stock",
+      "offer.deliverable",
+      "merchant.platformId"
+    ],
+    "persistedSameDecision": true
+  },
+  "controlledModelDialogue": {
+    "model": "controlled transport, not live model",
+    "transcript": [
+      {
+        "message": "比较乳液",
+        "reply": "请明确币种（本轮支持 HKD）。\n预算上限是多少港币（HKD 元）？\n预算是商品金额还是含运费总额？\n需要多少件？\n配送地区是什么？无需填写详细地址。",
+        "status": "needs_clarification",
+        "version": 1,
+        "candidateCount": 0
+      },
+      {
+        "message": "1件，100到300ml，总预算200港币含运费，配送香港，希望保湿。",
+        "reply": "商品缺少关键事实，需要核验；未执行购买。",
+        "status": "needs_verification",
+        "version": 2,
+        "searchInput": {
+          "taskId": "4ac98ee1-85d6-4a11-8492-80360ca0035c",
+          "requirementVersion": 2,
+          "useLlm": false,
+          "product_name": {
+            "value": "lotion",
+            "aliases": [
+              "乳液",
+              "emulsion"
+            ],
+            "must": 1
+          },
+          "range_conditions": [
+            {
+              "field": "volumeMl",
+              "min": 100,
+              "max": 300,
+              "must": 1
+            }
+          ],
+          "include_keywords": [
+            {
+              "keywords": [
+                "保湿",
+                "moisturizing",
+                "moisturising",
+                "hydrating"
+              ],
+              "must": 0,
+              "scope": "all"
+            }
+          ],
+          "exclude_keywords": []
+        },
+        "candidateCount": 10
+      },
+      {
+        "message": "容量改成200到300ml，预算改成180，排除含香精的商品。",
+        "reply": "商品缺少关键事实，需要核验；未执行购买。",
+        "status": "needs_verification",
+        "version": 3,
+        "searchInput": {
+          "taskId": "4ac98ee1-85d6-4a11-8492-80360ca0035c",
+          "requirementVersion": 3,
+          "useLlm": false,
+          "product_name": {
+            "value": "lotion",
+            "aliases": [
+              "乳液",
+              "emulsion"
+            ],
+            "must": 1
+          },
+          "range_conditions": [
+            {
+              "field": "volumeMl",
+              "min": 200,
+              "max": 300,
+              "must": 1
+            }
+          ],
+          "include_keywords": [
+            {
+              "keywords": [
+                "保湿",
+                "moisturizing",
+                "moisturising",
+                "hydrating"
+              ],
+              "must": 0,
+              "scope": "all"
+            }
+          ],
+          "exclude_keywords": [
+            {
+              "keywords": [
+                "香精",
+                "fragrance",
+                "parfum"
+              ],
+              "must": 1,
+              "scope": "all"
+            }
+          ]
+        },
+        "candidateCount": 7
+      }
+    ]
+  }
+}

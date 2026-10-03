@@ -50,7 +50,8 @@ export function createProductSearch(
   const includeLlmDebug = options.includeLlmDebug ?? false
   validateOptions({ recallLimit, providerTimeoutMs, scorerTimeoutMs, scorerConcurrency, includeLlmDebug })
 
-  async function searchProducts(unsafeInput: StructuredSearchInput): Promise<RankedSearchResult> {
+  async function searchProducts(unsafeInput: StructuredSearchInput, context?: { signal: AbortSignal }): Promise<RankedSearchResult> {
+    context?.signal.throwIfAborted()
     const llmEvents: LlmDebugEvent[] = []
     const identity = resultIdentity(unsafeInput)
     let input: StructuredSearchInput
@@ -67,7 +68,7 @@ export function createProductSearch(
     try {
       const response = await timed(
         (signal) => provider.recall(input.product_name.value, recallLimit, { signal, input }),
-        providerTimeoutMs,
+        providerTimeoutMs, context?.signal,
       )
       if (!response || !Array.isArray(response.products) ||
           (response.status !== "complete" && response.status !== "partial") ||
@@ -88,6 +89,7 @@ export function createProductSearch(
       return failed(identity, providerWarning(error))
     }
 
+    context?.signal.throwIfAborted()
     const normalized = new Map<string, Candidate>()
     const warningsBeforeNormalization = warnings.length
     let rejectedRecords = 0
@@ -141,6 +143,7 @@ export function createProductSearch(
       popularity.candidates,
       scorerConcurrency,
       async (candidate): Promise<Omit<RankedCandidate, "rank">> => {
+        context?.signal.throwIfAborted()
         let conditionScores: ConditionScore[]
         let llmAverageScore: number | null = null
         try {
@@ -154,12 +157,13 @@ export function createProductSearch(
                   : undefined,
               },
             ),
-            scorerTimeoutMs,
+            scorerTimeoutMs, context?.signal,
           )
           assertConditionScores(conditionScores, conditions)
           if (activeScorer.kind === "llm") llmAverageScore = arithmeticMean(conditionScores.map((score) => score.score))
           conditionScores = enforceUnknownScores(conditionScores, candidate, conditions)
         } catch {
+          context?.signal.throwIfAborted()
           partial = true
           scoreWarnings.push(`SOURCE_UNAVAILABLE: ${candidate.productId} 的 LLM 评分失败，已使用确定性评分降级。`)
           conditionScores = await fallback.scoreCandidate({ candidate, conditions })
@@ -177,6 +181,7 @@ export function createProductSearch(
       },
     )
 
+    context?.signal.throwIfAborted()
     scored.sort((left, right) =>
       right.finalScore - left.finalScore ||
       comparePopularity(right.popularityScore, left.popularityScore) ||
@@ -388,13 +393,18 @@ function enforceUnknownScores(
   })
 }
 
-async function timed<T>(operation: (signal: AbortSignal) => Promise<T>, timeoutMs: number): Promise<T> {
+async function timed<T>(operation: (signal: AbortSignal) => Promise<T>, timeoutMs: number, parent?: AbortSignal): Promise<T> {
   const controller = new AbortController()
+  const signal = parent ? AbortSignal.any([controller.signal, parent]) : controller.signal
+  signal.throwIfAborted()
+  let abort: (() => void) | undefined
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([
-      Promise.resolve().then(() => operation(controller.signal)),
+      Promise.resolve().then(() => { signal.throwIfAborted(); return operation(signal) }),
       new Promise<never>((_, reject) => {
+        abort = () => reject(new ProductProviderError("TIMEOUT", "Operation cancelled"))
+        signal.addEventListener("abort", abort, { once: true })
         timer = setTimeout(() => {
           controller.abort()
           reject(new ProductProviderError("TIMEOUT", "Operation timed out"))
@@ -403,6 +413,7 @@ async function timed<T>(operation: (signal: AbortSignal) => Promise<T>, timeoutM
     ])
   } finally {
     if (timer) clearTimeout(timer)
+    if (abort) signal.removeEventListener("abort", abort)
   }
 }
 

@@ -346,7 +346,6 @@ export type Preference = {
 }
 
 export type Requirement = {
-  allowAlternativeProducts?: boolean
   taskId: string
   requirementVersion: number
   category: string
@@ -359,6 +358,7 @@ export type Requirement = {
   hardConstraints: Constraint[]
   preferences: Preference[]
   excludedProductIds: string[]
+  allowAlternativeProducts?: boolean
   destination?: string
 }
 
@@ -564,6 +564,8 @@ export type PriceBenchmark = {
   excludedOfferIds: string[]
 }
 export type ContractBPolicy = {
+  /** Search-only integration may inspect candidates without trusted checkout configuration. */
+  searchOnly?: boolean
   policyVersion: string
   dataEnvironment: "development_mock" | "verified_sources"
   merchantAllowlist: { id: string; platformId: string }[]
@@ -573,6 +575,10 @@ export type ContractBPolicy = {
   staticTtlMs?: number
   now?: () => Date
   categoryAliases?: Record<string, string>
+  /** Trusted language aliases for user text, not product facts. */
+  textAliases?: Record<string, string[]>
+  /** Broad source taxonomy cannot prove a more specific requested category. */
+  broadCategories?: string[]
   // Explicit server schema: unknown constraint fields are errors, not ignored.
   attributeSchema?: Record<string, "number" | "string" | "boolean">
   payment?: Pick<PaymentOptimizationPolicy, "factTtlMs" | "currencyMinorUnits">
