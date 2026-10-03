@@ -28,6 +28,8 @@ export type KeywordCondition = {
 export type StructuredSearchInput = {
   taskId: string
   requirementVersion: number
+  /** Defaults to true. False explicitly selects deterministic scoring for this request. */
+  useLlm?: boolean
   product_name: ProductNameCondition
   range_conditions: RangeCondition[]
   include_keywords: KeywordCondition[]
@@ -107,6 +109,8 @@ export type RankedCandidate = {
   rank: number
   candidate: Candidate
   finalScore: number
+  /** Arithmetic mean of the raw LLM condition scores; null when the LLM was not used or failed. */
+  llmAverageScore: number | null
   popularityScore: number | null
   conditionScores: ConditionScore[]
   needsVerification: string[]

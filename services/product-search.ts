@@ -128,21 +128,24 @@ export function createProductSearch(
     if (popularity.applied) {
       warnings.push(`候选超过 10 种，已按评分和销量从 ${filtered.candidates.length} 种预选到 10 种。`)
     }
-    if (scorer.kind === "deterministic") {
+    const useLlm = input.useLlm !== false
+    if (useLlm && scorer.kind === "deterministic") {
       partial = true
       warnings.push("SOURCE_UNAVAILABLE: 未配置 LLM，已使用确定性评分降级。")
     }
 
     const fallback = new DeterministicConditionScorer()
+    const activeScorer = useLlm ? scorer : fallback
     const scoreWarnings: string[] = []
     const scored = await mapWithConcurrency(
       popularity.candidates,
       scorerConcurrency,
       async (candidate): Promise<Omit<RankedCandidate, "rank">> => {
         let conditionScores: ConditionScore[]
+        let llmAverageScore: number | null = null
         try {
           conditionScores = await timed(
-            (signal) => scorer.scoreCandidate(
+            (signal) => activeScorer.scoreCandidate(
               { candidate, conditions },
               {
                 signal,
@@ -154,6 +157,7 @@ export function createProductSearch(
             scorerTimeoutMs,
           )
           assertConditionScores(conditionScores, conditions)
+          if (activeScorer.kind === "llm") llmAverageScore = arithmeticMean(conditionScores.map((score) => score.score))
           conditionScores = enforceUnknownScores(conditionScores, candidate, conditions)
         } catch {
           partial = true
@@ -163,6 +167,7 @@ export function createProductSearch(
         return {
           candidate,
           finalScore: harmonicScore(conditionScores, conditions),
+          llmAverageScore,
           popularityScore: popularity.scores.get(identityKey(candidate)) ?? null,
           conditionScores,
           needsVerification: conditions
@@ -213,6 +218,9 @@ export function assertStructuredSearchInput(value: unknown): asserts value is St
       !Array.isArray(value.include_keywords) || value.include_keywords.length > 50 ||
       !Array.isArray(value.exclude_keywords) || value.exclude_keywords.length > 50) {
     throw new SearchValidationError("Invalid search input")
+  }
+  if (value.useLlm !== undefined && typeof value.useLlm !== "boolean") {
+    throw new SearchValidationError("Invalid LLM selection")
   }
   for (const condition of value.range_conditions) {
     if (!isRecord(condition) || !["priceMinor", "volumeMl"].includes(String(condition.field)) ||
@@ -505,6 +513,10 @@ function comparePopularity(left: number | null, right: number | null): number {
   if (left === null) return -1
   if (right === null) return 1
   return left - right
+}
+
+function arithmeticMean(values: number[]): number | null {
+  return values.length === 0 ? null : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length * 100) / 100
 }
 
 function positiveIntegerEnv(name: string): number | null {

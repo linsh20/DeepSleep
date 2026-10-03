@@ -18,6 +18,7 @@ export function ProductSearch() {
   const [includePrefer, setIncludePrefer] = useState("moisturizing, moisturising, hydration")
   const [excludeMust, setExcludeMust] = useState("alcohol, alcohol denat, ethanol")
   const [excludePrefer, setExcludePrefer] = useState("fragrance, parfum")
+  const [useLlm, setUseLlm] = useState(true)
   const [result, setResult] = useState<RankedSearchResult | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState("")
@@ -78,6 +79,7 @@ export function ProductSearch() {
     const searchInput: StructuredSearchInput = {
       taskId: taskId.current,
       requirementVersion: ++version.current,
+      useLlm,
       product_name: { value: productName.trim(), must: 1 },
       range_conditions: [
         { field: "volumeMl", ...volume, must: 1 },
@@ -117,6 +119,15 @@ export function ProductSearch() {
               <Field label="成分必须排除（逗号分隔）" value={excludeMust} onChange={setExcludeMust} />
               <Field label="成分希望排除（逗号分隔）" value={excludePrefer} onChange={setExcludePrefer} />
             </div>
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-lg border p-3 text-sm">
+              <input
+                type="checkbox"
+                checked={useLlm}
+                onChange={(event) => setUseLlm(event.target.checked)}
+                className="size-4"
+              />
+              <span><span className="font-medium">使用 LLM 评分</span><span className="ml-2 text-muted-foreground">关闭后使用确定性规则，方便对比。</span></span>
+            </label>
             <Button type="submit" disabled={pending}>{pending ? "搜索与排序中…" : "开始搜索"}</Button>
           </form>
         </CardContent>
@@ -163,7 +174,12 @@ export function ProductSearch() {
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
                 <div><CardTitle>#{item.rank} {item.candidate.title}</CardTitle><CardDescription>{item.candidate.category}</CardDescription></div>
-                <Badge>{item.finalScore.toFixed(2)} / 5</Badge>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  {item.llmAverageScore === null
+                    ? <Badge variant="outline">未使用 LLM</Badge>
+                    : <Badge>LLM 均分 {item.llmAverageScore.toFixed(2)} / 5</Badge>}
+                  <span className="text-xs text-muted-foreground">综合排序分 {item.finalScore.toFixed(2)} / 5</span>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">

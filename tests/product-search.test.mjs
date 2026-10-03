@@ -156,23 +156,24 @@ test("one scorer failure degrades only that product and returns partial usable r
   assert.ok(result.warnings.some((warning) => warning.includes("LLM 评分失败")))
 })
 
-test("OpenAI-compatible scorer canonicalizes common candidate evidence prefixes and logs safely", async () => {
+test("OpenAI-compatible scorer sends compact nonempty facts and accepts score-only output", async () => {
   const originalFetch = globalThis.fetch
   const originalInfo = console.info
   let logLine = ""
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    choices: [{ message: { content: JSON.stringify({
-      scores: [{
-        conditionId: "product_name",
-        score: 5,
-        reason: "The title matches the requested product name.",
-        evidenceFields: ["candidate.title", "candidate.volumeMl", "candidate.searchableText.description"],
-      }],
-    }) } }],
-  }), { status: 200, headers: { "Content-Type": "application/json" } })
+  let sentBody
+  globalThis.fetch = async (_url, init) => {
+    sentBody = JSON.parse(init.body)
+    return new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify({ scores: { product_name: 5 } }) } }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } })
+  }
   console.info = (message) => { logLine = String(message) }
   try {
-    const provider = { recall: async () => ({ products: [raw("adapter", "Adapter Lotion")], status: "complete" }) }
+    const item = raw("adapter", "Adapter Lotion")
+    item.searchableText.ingredients = null
+    item.attributes.emptyFact = null
+    item.offer.shippingMinor = null
+    const provider = { recall: async () => ({ products: [item], status: "complete" }) }
     const scorer = new OpenAICompatibleConditionScorer({
       endpoint: "https://llm.example.test/v1/chat/completions",
       apiKey: "test-secret",
@@ -184,9 +185,13 @@ test("OpenAI-compatible scorer canonicalizes common candidate evidence prefixes 
     }))
     assert.equal(result.status, "complete")
     assert.equal(result.candidates[0].conditionScores[0].source, "llm")
-    assert.deepEqual(result.candidates[0].conditionScores[0].evidenceFields, [
-      "title", "attributes.volumeMl", "searchableText.description",
-    ])
+    assert.equal(result.candidates[0].llmAverageScore, 5)
+    const llmInput = JSON.parse(sentBody.messages[1].content)
+    assert.equal(llmInput.candidate.category_name, "test")
+    assert.equal("ingredients" in llmInput.candidate.searchableText, false)
+    assert.equal("emptyFact" in llmInput.candidate.attributes, false)
+    assert.equal("shippingMinor" in llmInput.candidate.offer, false)
+    assert.ok(!sentBody.messages[0].content.includes("reason"))
     assert.match(logLine, /^\[llm-score\]/)
     assert.match(logLine, /"event":"success"/)
     assert.ok(!logLine.includes("test-secret"))
@@ -206,6 +211,15 @@ test("LLM payloads are omitted from results unless local UI debugging is explici
     product_name: { value: "Lotion", must: 1 }, range_conditions: [], include_keywords: [], exclude_keywords: [],
   }))
   assert.equal("debug" in result, false)
+})
+
+test("useLlm false skips a configured LLM without marking the search partial", async () => {
+  const scorer = { ...fiveScorer, calls: [] }
+  const result = await createProductSearch(new MockProductProvider(), scorer).searchProducts(baseInput({ useLlm: false }))
+  assert.equal(result.status, "complete")
+  assert.equal(scorer.calls.length, 0)
+  assert.ok(result.candidates.every((item) => item.llmAverageScore === null))
+  assert.ok(result.candidates.every((item) => item.conditionScores.every((score) => score.source !== "llm")))
 })
 
 test("a scorer timeout is bounded and falls back without losing the candidate", async () => {

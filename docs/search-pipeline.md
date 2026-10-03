@@ -10,6 +10,7 @@ import { searchProducts } from "@/services/product-search"
 const result = await searchProducts({
   taskId: "task-001",
   requirementVersion: 1,
+  useLlm: true,
   product_name: {
     value: "lotion",
     aliases: ["emulsion", "moisturising lotion"],
@@ -43,6 +44,7 @@ HTTP 入口为 `POST /api/products/search`，请求体就是上述结构。响�
 | `KeywordCondition.scope` | 可选；`all` 或 `ingredients`，默认 `all` |
 | `taskId` | 当前任务标识 |
 | `requirementVersion` | 非负整数；需求变化时递增 |
+| `useLlm` | 可选布尔值，默认 `true`；`false` 时本次请求跳过 LLM |
 
 金额进入核心契约前必须转换为整数最小货币单位。事实未知时使用 `null`，不能使用 `0`、空字符串或虚构值。
 
@@ -53,7 +55,7 @@ HTTP 入口为 `POST /api/products/search`，请求体就是上述结构。响�
 3. `must` 的已知违反会淘汰；未知事实保留并加入 `needsVerification`。`prefer` 不淘汰。
 4. 每个条件产生包含筛选前后数量的 `FilterLog`。候选变成零时立即返回，不调用评分器。
 5. 候选超过十个时，先按评分 60%、销量 40% 预选。销量使用 `log1p` 降低长尾影响；缺失指标不伪造为零。
-6. 对最多十个候选逐条件执行 LLM 评分。分数为 1–5；未知条件由代码强制为 3。
+6. `useLlm` 未关闭时，对最多十个候选逐条件执行 LLM 评分；关闭时直接使用确定性评分。分数为 1–5，未知条件由代码强制为 3。
 7. 使用 `must=2`、`prefer=1` 的加权调和平均计算最终分，低条件分会受到更强惩罚。
 8. 返回最多十个按分数排序的精确候选身份。
 
@@ -84,10 +86,11 @@ LLM_LOG_PAYLOADS=1
 LLM_DEBUG_UI=1
 ```
 
-不得使用 `NEXT_PUBLIC_` 暴露密钥。商品文本作为不可信数据放在 user 内容中；系统指令禁止执行商品文本中的指令或补写事实。模型输出必须覆盖全部条件、满足 1–5 整数分和证据字段约束。
+不得使用 `NEXT_PUBLIC_` 暴露密钥。商品文本作为不可信数据放在 user 内容中；系统指令禁止执行商品文本中的指令或补写事实。发给模型的候选包含 `category_name` 及全部非空文本、属性和报价事实，递归删除 `null`、空字符串、空对象和空数组。模型输出只允许 `{ "scores": { "conditionId": 1..5 } }`，必须覆盖全部条件且不得返回理由或证据。
 `LLM_API_URL` 必须指向完整的 Chat Completions 路径。`LLM_TIMEOUT_MS` 可选，默认值为 30000 毫秒；无效值会回退到默认值。
 
 未配置模型、超时或单商品输出非法时，该商品使用确定性评分降级，结果标记为 `partial`。单商品失败不会导致整个搜索失败。确定性规则为满足 5 分、违反 1 分、未知 3 分。
+每个候选的 `llmAverageScore` 是模型原始条件分的算术平均值；未调用或调用失败时为 `null`。最终排序仍使用经过未知值保护后的加权调和平均 `finalScore`。
 
 服务端以 `[llm-score]` 输出安全结构化日志，字段包括 `event`、`productId`、`durationMs`、`conditionCount` 和错误代码。日志不会包含 API Key、端点、提示词、商品正文、模型正文或上游私有错误消息。
 仅在本地排查时，可用 `LLM_LOG_PAYLOADS=1` 额外打印完整的 `[llm-score:request]` 和 `[llm-score:response]`。生产环境会忽略此开关，日志也不会包含 API Key。完整载荷含商品正文和模型理由，不应长期保存或提交。

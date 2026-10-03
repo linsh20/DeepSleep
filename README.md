@@ -11,6 +11,7 @@ DeepSleep 当前实现一条统一的商品搜索管线，不再区分 Agent A �
 - `must` 只淘汰已知违反；未知值保留并标记待验证；`prefer` 只参与排序。
 - 超过十个候选时按评分 60%、销量 40% 预选。
 - LLM 对每个条件给出 1–5 分，未知事实由代码强制为 3。
+- 可按单次请求关闭 LLM 并与确定性评分对比；商品卡片单独显示 LLM 算术平均分。
 - 采用对低分敏感的加权调和平均，`must` 权重 2、`prefer` 权重 1。
 - 单商品 LLM 失败时确定性降级，不影响其他商品。
 - 保留来源、获取时间、事实状态、精确商品身份、任务 ID 和需求版本。
@@ -35,6 +36,7 @@ npm run dev
 {
   "taskId": "task-001",
   "requirementVersion": 1,
+  "useLlm": true,
   "product_name": {
     "value": "lotion",
     "aliases": ["emulsion", "moisturising lotion"],
@@ -55,7 +57,7 @@ npm run dev
 }
 ```
 
-金额统一使用整数最小货币单位：HKD 100 表示为 `10000`。容量使用 `volumeMl`。`aliases` 和 `scope` 均为可选字段；`scope` 默认为 `all`，成分排除建议明确使用 `ingredients`。未知商品事实使用 `null`，不能用零或空字符串代替。
+金额统一使用整数最小货币单位：HKD 100 表示为 `10000`。容量使用 `volumeMl`。`useLlm` 可选且默认为 `true`；设为 `false` 时本次请求完全跳过 LLM 并使用确定性评分。`aliases` 和 `scope` 均为可选字段；`scope` 默认为 `all`，成分排除建议明确使用 `ingredients`。未知商品事实使用 `null`，不能用零或空字符串代替。
 
 当前快照是 `en_HK`，所以上游应把中文意图转换为英文 `value`/`aliases`；展示和说明仍可使用中文。品牌名和 INCI 成分保留源数据原文，不做简繁或机器翻译。这样可以避开简繁转换和中文分词歧义，同时保留成分标准名称。
 
@@ -82,6 +84,7 @@ LLM_DEBUG_UI=1
 
 接口采用 OpenAI-compatible chat-completion JSON 格式。配置和调用只存在于服务端，禁止使用 `NEXT_PUBLIC_` 暴露密钥。
 `LLM_API_URL` 必须是完整的 Chat Completions 地址，例如以 `/v1/chat/completions` 结尾。`LLM_TIMEOUT_MS` 可选，默认 30000 毫秒。
+发送给模型的候选数据包含分类 `category_name`、全部非空文本、属性和报价字段；`null`、空字符串、空对象和空数组不会发送。模型只返回 `{ "scores": { "conditionId": 1..5 } }`，原因和证据不由模型生成。
 
 开发服务会输出 `[llm-score]` 结构化日志，仅包含成功/失败、商品 ID、耗时、条件数和安全错误代码；不会记录密钥、提示词、商品正文或模型理由。
 本地调试时可设置 `LLM_LOG_PAYLOADS=1`，服务端终端会额外输出完整的 `[llm-score:request]` 与 `[llm-score:response]`。此开关在生产环境中强制关闭，且日志始终不包含 API Key；因为其中包含商品正文和模型理由，排查完成后应删除或改为 `0`。
