@@ -42,4 +42,4 @@ ORDER BY product_code, platform_id;
 sqlite3.exe -readonly ".\data\watson\data\products.demo-multiplatform.db" "SELECT product_code, platform_id, price FROM product_offers WHERE product_code IN ('BP_119795','BP_235677') ORDER BY product_code, platform_id;"
 ```
 
-数据库记录没有实时运费、配送、库存及整单结账确认，新增平台链接也是占位 Demo URL。用户需求和搜索结果不是付款授权；不得把模拟报价接入真实购买、Stripe 支付或对外宣称实时可购。详细调用和完整校验命令见 [`MULTIPLATFORM_DEMO.md`](../../data/watson/MULTIPLATFORM_DEMO.md)。
+数据库记录没有实时运费、配送、库存及整单结账确认，新增平台链接也是占位 Demo URL。授权表可以表达自动支付意图，但执行前仍必须由服务端核验有效授权、实时整单报价、商品与商户身份及支付白名单；模拟报价不能直接触发真实扣款，也不能对外宣称实时可购。详细调用和完整校验命令见 [`MULTIPLATFORM_DEMO.md`](../../data/watson/MULTIPLATFORM_DEMO.md)。
