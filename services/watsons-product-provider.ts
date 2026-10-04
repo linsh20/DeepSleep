@@ -181,7 +181,7 @@ function mapWatsonsProduct(row: WatsonsProductRow, fetchedAt: string): RawProduc
   return {
     productId: `watsons-product:${code}`,
     skuId: `watsons-sku:${variantCode}`,
-    offerId: offerId ? `marketplace-offer:${offerId}` : `watsons-offer-hk:${code}:${variantCode}`,
+    offerId: offerId ?? `watsons-offer-hk:${code}:${variantCode}`,
     title,
     url: row.product_url === undefined ? watsonsUrl(parsed.url) : productUrl(row.product_url),
     category,

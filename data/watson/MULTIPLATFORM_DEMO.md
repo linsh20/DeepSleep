@@ -33,6 +33,8 @@ Demo 定价规则：SaSa 为 Watsons 快照价的 94%，Mannings 为 Watsons 快
 | `platform_id` | `watsons-hk`、`sasa-hk` 或 `mannings-hk` |
 | `fact_source` / `fact_status` | Watsons 为已验证快照；新增平台为 `mock-dataset` / `mock` |
 
+例如 `BP_119795` 的三个报价共享 `watsons-product:BP_119795` 和同一个 `watsons-sku`；原 Watsons 报价 ID 保持 `watsons-offer-hk:BP_119795:119795`，新增报价分别使用 `sasa-offer-hk:`、`mannings-offer-hk:` 前缀。已有 Watsons Offer 引用因此不会因切换数据库而改变。
+
 ## 启动
 
 要求 Node.js 22.13+。在仓库根目录执行：
@@ -78,6 +80,12 @@ candidates[].candidate.merchant.platformId.value
 ```
 
 同一商品的多个结果应具有相同 `productId`/`skuId` 和不同 `offerId`。金额字段 `offer.itemPriceMinor.value` 使用 HKD 最小货币单位，例如 `12972` 表示 HKD 129.72。
+
+未配置 LLM 时，搜索使用确定性评分降级，响应的 `status` 可以是 `partial`，但仍会返回上述三个报价；这不表示数据库记录缺失。
+
+`merchant.id`、`merchant.name` 和 `merchant.platformId` 随候选传给 Agent B；`merchant.name`/`platformId` 是带来源与时间的 Fact。一级商品交接还保留商户字段和原始 `databaseCode`。主 Agent 的购物契约也能接收同一商品的三个报价，按三元组 `(productId, skuId, offerId)` 区分。
+
+当前这些新增报价仅含商品单价，缺少实时运费、配送与结账总价。主 Agent 和 Agent B 会返回 `needs_verification`，不会把模拟平台价格当作可购买的真实报价。现有结算目录只支持独立登记的沙盒商品；本数据库中的护肤品不会绕过目录和风控直接下单。
 
 ## 代码调用链
 

@@ -140,7 +140,9 @@ function toHandoffProduct(candidate: Candidate): HandoffProduct {
   return {
     productId: copy.productId, skuId: copy.skuId, offerId: copy.offerId,
     databaseCode: copy.productId.startsWith("watsons-product:") ? copy.productId.slice("watsons-product:".length) : null,
-    title: copy.title, category: copy.category, searchableText: copy.searchableText,
+    title: copy.title, category: copy.category,
+    ...(copy.merchant ? { merchant: copy.merchant } : {}),
+    searchableText: copy.searchableText,
     attributes: Object.fromEntries(Object.entries(copy.attributes).map(([key, fact]) => [
       publicField(key), key === "listPriceMinor"
         ? { ...fact, value: typeof fact.value === "number" ? fact.value / 100 : null } : fact,

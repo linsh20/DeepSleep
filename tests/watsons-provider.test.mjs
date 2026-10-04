@@ -77,6 +77,8 @@ test("multi-platform demo keeps product and SKU identity stable while offers and
   assert.equal(new Set(offers.map(product => product.productId)).size, 1)
   assert.equal(new Set(offers.map(product => product.skuId)).size, 1)
   assert.equal(new Set(offers.map(product => product.offerId)).size, 3)
+  assert.equal(offers.find(product => product.merchant.platformId === "watsons-hk").offerId,
+    "watsons-offer-hk:BP_119795:119795")
   assert.deepEqual(new Set(offers.map(product => product.merchant.platformId)),
     new Set(["watsons-hk", "sasa-hk", "mannings-hk"]))
   assert.equal(offers.find(product => product.merchant.platformId === "watsons-hk").status, "verified")

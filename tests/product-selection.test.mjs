@@ -50,6 +50,20 @@ test("level 1 skips hard failures and unknowns despite score 5, preserving facts
   assert.deepEqual(input, before)
 })
 
+test("level 1 handoff keeps the selected offer's platform merchant", async () => {
+  const item = ranked("watsons-product:BP_119795", 1, "water")
+  item.candidate.merchant = {
+    id: "sasa-hk",
+    name: fact("SaSa Hong Kong (Demo)"),
+    platformId: fact("sasa-hk"),
+  }
+  const result = await createProductSelection(source([item]))(request())
+  assert.equal(result.status, "ready")
+  assert.equal(result.selection.candidate.databaseCode, "BP_119795")
+  assert.equal(result.selection.candidate.merchant.id, "sasa-hk")
+  assert.equal(result.selection.candidate.merchant.platformId.value, "sasa-hk")
+})
+
 test("unknown hard requirements do not yield a handoff; unknown preferences may", async () => {
   const select = createProductSelection(source([ranked("unknown", 1, null)]))
   const input = request()

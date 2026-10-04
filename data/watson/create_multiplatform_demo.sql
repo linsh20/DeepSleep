@@ -29,7 +29,7 @@ INSERT INTO product_offers (
   price, currency, product_url, fact_source, fact_status, fetched_at, is_demo
 )
 SELECT
-  'watsons-hk:' || p.code || ':' || COALESCE(
+  'watsons-offer-hk:' || p.code || ':' || COALESCE(
     json_extract(p.raw_json, '$.defaultVariantCode'),
     json_extract(p.raw_json, '$.ean'),
     p.code
@@ -80,7 +80,7 @@ INSERT INTO product_offers (
   price, currency, product_url, fact_source, fact_status, fetched_at, is_demo
 )
 SELECT
-  platforms.platform_id || ':' || limited.code || ':' || limited.sku_code,
+  platforms.offer_prefix || limited.code || ':' || limited.sku_code,
   limited.code,
   limited.sku_code,
   platforms.platform_id,
@@ -98,9 +98,10 @@ SELECT
   1
 FROM limited
 CROSS JOIN (
-  SELECT 'sasa-hk' AS platform_id, 'SaSa Hong Kong (Demo)' AS merchant_name
+  SELECT 'sasa-hk' AS platform_id, 'SaSa Hong Kong (Demo)' AS merchant_name,
+    'sasa-offer-hk:' AS offer_prefix
   UNION ALL
-  SELECT 'mannings-hk', 'Mannings Hong Kong (Demo)'
+  SELECT 'mannings-hk', 'Mannings Hong Kong (Demo)', 'mannings-offer-hk:'
 ) AS platforms
 CROSS JOIN snapshot AS s;
 
