@@ -43,7 +43,7 @@ test("A–E: actual ShoppingPort payload, targeted edits/removal/promotion and r
   assert.deepEqual(Object.keys(a).sort(), ["quantity", "requirement"])
   assert.equal(a.quantity, 1)
   assert.equal(a.requirement.query, "乳液")
-  assert.equal(a.requirement.budget.maxMinor, 20000)
+  assert.equal(a.requirement.budget.maxHKD, 200)
   assert.equal(a.requirement.hardConstraints.length, 3)
   for (const c of [...volume(100, 300), pack]) assert.ok(a.requirement.hardConstraints.some(x => JSON.stringify(x) === JSON.stringify(c)))
   assert.deepEqual(a.requirement.preferences[0].conditions, [moisture])
@@ -58,7 +58,7 @@ test("A–E: actual ShoppingPort payload, targeted edits/removal/promotion and r
   t = await say(agent, t, "容量不限，预算改成180。")
   const c = requests.at(-1).requirement
   assert.deepEqual(c.hardConstraints, [pack])
-  assert.equal(c.budget.maxMinor, 18000)
+  assert.equal(c.budget.maxHKD, 180)
   assert.deepEqual(c.preferences, b.preferences)
   t = await say(agent, t, "保湿必须满足。")
   assert.deepEqual(requests.at(-1).requirement.preferences, [])

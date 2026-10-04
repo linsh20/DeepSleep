@@ -16,7 +16,7 @@ const { createAgentHttp } = requireTS("../services/main-agent/http.ts")
 const { hkdToMinor } = requireTS("../services/main-agent/money.ts")
 let sequence = 0
 const rid = () => `model_req_${++sequence}`
-const fullDraft = () => ({ category: "化妆品", query: "测试牌粉底02色30ml正装", currency: "HKD", quantity: 1, destination: "香港", budget: { maxMinor: 20000, scope: "delivered" } })
+const fullDraft = () => ({ category: "化妆品", query: "测试牌粉底02色30ml正装", currency: "HKD", quantity: 1, destination: "香港", budget: { maxHKD: 200, scope: "delivered" } })
 const fullMessage = "帮我买测试牌粉底02色30ml正装，一件，预算200港币含运费，配送香港"
 const wire = (patch = {}, evidence = {}, intent = "compare", intentEvidence = null) => JSON.stringify({ intent, intentEvidence, requirementDraft: patch, evidence, missingFields: [], clarificationQuestions: [] })
 const fullWire = () => wire({ category: "化妆品", query: "测试牌粉底02色30ml正装", currency: "HKD", quantity: 1, destination: "香港", budget: { amountHKD: "200", scope: "delivered" } }, {
@@ -47,13 +47,13 @@ test("natural-language acceptance 1–5: clarify, complete, budget edit, compare
   task = await say(agent, task, fullMessage)
   assert.equal(task.status, "result_ready")
   assert.equal(task.intent, "purchase")
-  assert.equal(task.requirementDraft.budget.maxMinor, 20000)
+  assert.equal(task.requirementDraft.budget.maxHKD, 200)
   assert.equal(calls(), 1)
   assert.match(last(task).content, /购买执行尚未接入/)
   const before = task
   task = await say(agent, task, "预算改成 180，其他不变")
   assert.equal(task.requirementVersion, before.requirementVersion + 1)
-  assert.deepEqual(task.requirementDraft, { ...before.requirementDraft, budget: { maxMinor: 18000, scope: "delivered" } })
+  assert.deepEqual(task.requirementDraft, { ...before.requirementDraft, budget: { maxHKD: 180, scope: "delivered" } })
   assert.equal(calls(), 2)
   task = await say(agent, task, "只是比较，先不要买")
   assert.equal(task.intent, "compare")

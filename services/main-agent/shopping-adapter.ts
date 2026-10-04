@@ -1,11 +1,12 @@
 import { CHECKOUT_PRODUCT, CheckoutCatalogProvider, checkoutPolicy } from "../checkout/catalog"
 import { createShoppingAgent, type ShoppingDependencies } from "../shopping-agent"
-import { createProductSearch } from "../product-search"
+import { assertStructuredSearchInput, createProductSearch } from "../product-search"
 import { WatsonsSqliteProductProvider } from "../watsons-product-provider"
 import { DeterministicConditionScorer, createConfiguredConditionScorer } from "../condition-scorer"
 import type { Constraint, ContractBPolicy, Requirement, StructuredSearchInput } from "../../types"
 import type { ShoppingPort, ShoppingPortInput, ShoppingPortResult } from "./shopping-port"
-import { TaskError } from "./types"
+import { TaskError, type MainAgentRequirement } from "./types"
+import { hkdNumberToMinor } from "./money"
 
 // Reviewed lexical equivalences only. No model-generated taxonomy or brand translation.
 export const SEARCH_ALIASES: Record<string, string[]> = {
@@ -15,9 +16,9 @@ export const SEARCH_ALIASES: Record<string, string[]> = {
   "香精": ["fragrance", "parfum"],
 }
 export type SearchTranslation = { dictionaryVersion: "en-hk-v1"; originalQuery: string; originalCategory: string; mappings: { original: string; aliases: string[] }[]; retainedForB: string[]; warnings: string[] }
-export function deriveSearchInput(requirement: Requirement, useLlm = false): { searchInput: StructuredSearchInput; translation: SearchTranslation } {
+export function deriveSearchInput(requirement: MainAgentRequirement | Requirement, useLlm = false): { searchInput: StructuredSearchInput; translation: SearchTranslation } {
   const r = requirement
-  const translation: SearchTranslation = { dictionaryVersion: "en-hk-v1", originalQuery: r.query, originalCategory: r.category, mappings: [], retainedForB: [], warnings: ["整单预算保留给 B 按数量和报价审核，不转换为召回单价上限。"] }
+  const translation: SearchTranslation = { dictionaryVersion: "en-hk-v1", originalQuery: r.query, originalCategory: r.category, mappings: [], retainedForB: [], warnings: ["主 Agent 预算使用 HKD 元；搜索 Agent 不接预算，审核边界再转换为整数最小货币单位。"] }
   const aliases = (text: string) => {
     const key = text.normalize("NFKC").trim()
     const list = Object.hasOwn(SEARCH_ALIASES,key) ? SEARCH_ALIASES[key] : []
@@ -45,7 +46,20 @@ export function deriveSearchInput(requirement: Requirement, useLlm = false): { s
   map(r.hardConstraints,1)
   for (const p of r.preferences) map(p.conditions ?? [],0)
   // Requirement is never translated/replaced; B retains every original condition and relative weight.
+  assertStructuredSearchInput(searchInput)
   return { searchInput, translation }
+}
+
+/** Main Agent uses HKD for the demo; Shopping/Risk keep exact integer minor units. */
+export function toShoppingRequirement(requirement: MainAgentRequirement | Requirement): Requirement {
+  const maxMinor = "maxHKD" in requirement.budget
+    ? hkdNumberToMinor(requirement.budget.maxHKD)
+    : requirement.budget.maxMinor
+  if (!Number.isSafeInteger(maxMinor) || maxMinor <= 0) throw new TaskError("INVALID_INPUT", "下游预算金额无效")
+  return {
+    ...structuredClone(requirement),
+    budget: { maxMinor, scope: requirement.budget.scope },
+  }
 }
 export const SHOPPING_TIMEOUT_MS = 20000
 export function watsonsPolicy(): ContractBPolicy {
@@ -59,8 +73,9 @@ export class ContractShoppingPort implements ShoppingPort {
   async search(input: ShoppingPortInput, signal: AbortSignal): Promise<ShoppingPortResult> {
     signal.throwIfAborted()
     const derived = deriveSearchInput(input.requirement,this.useLlm)
+    const shoppingInput = { ...structuredClone(input), requirement: toShoppingRequirement(input.requirement) }
     const result = await createShoppingAgent(this.dependencies,this.policy,{timeoutMs:SHOPPING_TIMEOUT_MS-1000,maxVerificationRounds:1})
-      .runShoppingTask({...structuredClone(input),searchInput:derived.searchInput},{signal})
+      .runShoppingTask({...shoppingInput,searchInput:derived.searchInput},{signal})
     signal.throwIfAborted()
     // Debug payloads are not a durable product/decision contract.
     if (result.search) delete result.search.debug

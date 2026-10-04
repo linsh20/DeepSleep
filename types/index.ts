@@ -327,6 +327,18 @@ export type PaymentRiskResult = {
   reasons: string[]
 }
 
+/** Level 1 pricing then level 2 risk in one call. `order` is non-null only when approved. */
+export type PaymentRiskFlowResult = {
+  taskId: string
+  requirementVersion: number
+  status: "approved" | "blocked" | "needs_verification" | "failed"
+  /** Where the flow stopped: level-1 order pricing or level-2 payment risk. */
+  stage: "pricing" | "payment_risk"
+  order: PricedProductHandoff | null
+  pricing: PreparePaymentHandoffResult
+  risk: PaymentRiskResult | null
+}
+
 // Agent B contract; Candidate remains the existing Agent A search shape.
 export type ConstraintOperator = "lte" | "gte" | "eq" | "in" | "notIn" | "containsAny" | "notContainsAny"
 

@@ -14,7 +14,7 @@ const { MemoryTaskRepository } = requireTS("../services/main-agent/task-reposito
 const { DevelopmentRequirementInterpreter } = requireTS("../services/main-agent/requirement-interpreter.ts")
 const { ShoppingStub } = requireTS("../services/main-agent/shopping-port.ts")
 const { createAgentHttp } = requireTS("../services/main-agent/http.ts")
-const full = () => ({ category: "化妆品", query: "指定品牌粉底 02色 30ml 正装", currency: "HKD", destination: "香港", quantity: 1, budget: { maxMinor: 18000, scope: "delivered" } })
+const full = () => ({ category: "化妆品", query: "指定品牌粉底 02色 30ml 正装", currency: "HKD", destination: "香港", quantity: 1, budget: { maxHKD: 180, scope: "delivered" } })
 let sequence = 0
 const id = () => `request_${++sequence}`
 function setup(port = new ShoppingStub(), options = {}, interpreter = new DevelopmentRequirementInterpreter()) {
@@ -29,6 +29,13 @@ async function ready(agent, intent = "compare", draft = full()) {
 }
 const run = (agent, task, requestId = id()) => agent.search(task.taskId, "owner", requestId, task.requirementVersion)
 const change = (agent, task, draft, intent = task.intent) => agent.save(task.taskId, "owner", { requestId: id(), expectedVersion: task.requirementVersion, intent, requirementDraft: draft })
+
+test("legacy maxMinor form input is normalized to Main Agent HKD", async () => {
+  const { agent } = setup()
+  const task = await ready(agent, "compare", { ...full(), budget: { maxMinor: 18000, scope: "delivered" } })
+  assert.deepEqual(task.requirementDraft.budget, { maxHKD: 180, scope: "delivered" })
+  assert.deepEqual(task.requirement.budget, { maxHKD: 180, scope: "delivered" })
+})
 
 test("A: partial draft and unclear intent never call Shopping or synthesize values", async () => {
   const { agent, calls } = setup()
@@ -71,7 +78,7 @@ test("D: old delayed results cannot override new budget/product result", async (
   const first = await ready(agent)
   const pending = run(agent, first)
   await started
-  const updated = await change(agent, first, { ...full(), query: "另一款唇膏", budget: { maxMinor: 25000, scope: "delivered" } })
+  const updated = await change(agent, first, { ...full(), query: "另一款唇膏", budget: { maxHKD: 250, scope: "delivered" } })
   assert.equal(updated.requirementVersion, 2)
   assert.equal(updated.shoppingResult, null)
   const current = await run(agent, updated)
@@ -115,7 +122,7 @@ test("F: concurrent duplicate create/save/search, no-op edits, intentional edits
   assert.equal(unchanged.requirementVersion, 1)
   await run(agent, unchanged)
   assert.equal(calls(), 1)
-  const edited = await change(agent, unchanged, { ...full(), budget: { maxMinor: 20000, scope: "delivered" } })
+  const edited = await change(agent, unchanged, { ...full(), budget: { maxHKD: 200, scope: "delivered" } })
   await run(agent, edited)
   assert.equal(calls(), 2)
   await assert.rejects(agent.save(a.taskId, "owner", { ...input, intent: "purchase" }), e => e.code === "REQUEST_CONFLICT")
@@ -145,8 +152,8 @@ test("reads are side-effect-free and cannot cross owner boundaries; snapshots ar
   assert.equal(calls(), 0)
   assert.throws(() => agent.get(task.taskId, "intruder"), e => e.code === "NOT_FOUND")
   const copy = agent.get(task.taskId, "owner")
-  copy.requirement.budget.maxMinor = 1
-  assert.equal(agent.get(task.taskId, "owner").requirement.budget.maxMinor, 18000)
+  copy.requirement.budget.maxHKD = 1
+  assert.equal(agent.get(task.taskId, "owner").requirement.budget.maxHKD, 180)
 })
 test("concurrent edits use optimistic version check instead of silently overwriting", async () => {
   const { agent } = setup()
@@ -162,7 +169,7 @@ test("untrusted interpreter cannot grant readiness, and malformed data is reject
   assert.equal(task.status, "needs_clarification")
   await run(agent, task)
   assert.equal(calls(), 0)
-  assert.throws(() => change(agent, task, { ...full(), budget: { maxMinor: -1, scope: "delivered" } }), e => e.code === "INVALID_INPUT")
+  assert.throws(() => change(agent, task, { ...full(), budget: { maxHKD: -1, scope: "delivered" } }), e => e.code === "INVALID_INPUT")
 })
 test("external instructions remain text; no permissions or verification upgrades", async () => {
   const stub = new ShoppingStub()

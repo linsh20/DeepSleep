@@ -1,10 +1,14 @@
 import type { Requirement } from "../../types/index"
 import type { ShoppingPortResult } from "./shopping-port"
 
-// Main-agent-only types. Canonical shared Requirement stays in types/index.ts.
 export type TaskIntent = "compare" | "purchase" | "unclear"
-export type RequirementDraft = Partial<Pick<Requirement, "category" | "query" | "currency" | "destination" | "hardConstraints" | "preferences" | "excludedProductIds" | "allowAlternativeProducts">> & {
-  budget?: Partial<Requirement["budget"]>
+// The conversational Main Agent uses HKD units. Downstream shopping/payment contracts
+// retain integer minor units and receive an explicit conversion at the adapter boundary.
+export type MainAgentRequirement = Omit<Requirement, "budget"> & {
+  budget: { maxHKD: number; scope: Requirement["budget"]["scope"] }
+}
+export type RequirementDraft = Partial<Pick<MainAgentRequirement, "category" | "query" | "currency" | "destination" | "hardConstraints" | "preferences" | "excludedProductIds" | "allowAlternativeProducts">> & {
+  budget?: Partial<MainAgentRequirement["budget"]>
   quantity?: number
 }
 export type TaskStatus = "needs_clarification" | "ready_to_search" | "shopping" | "result_ready" | "needs_verification" | "no_match" | "failed"
@@ -18,7 +22,7 @@ export type MainTask = Interpretation & {
   taskId: string
   userId: string
   requirementVersion: number
-  requirement: Requirement | null
+  requirement: MainAgentRequirement | null
   status: TaskStatus
   shoppingResult: ShoppingPortResult | null
   shoppingHistory?: { requirementVersion: number; result: ShoppingPortResult; archivedAt: string }[]

@@ -7,6 +7,7 @@ import type { SqlitePurchaseRepository } from "../purchase-execution/repository"
 import { ensure, type MerchantOrderPort, type SandboxPlan } from "../purchase-execution/types"
 import { CHECKOUT_PRODUCT, checkoutPolicy } from "./catalog"
 import type { CheckoutEvidence } from "./types"
+import { toShoppingRequirement } from "../main-agent/shopping-adapter"
 export const candidateId = (c:Pick<ShoppingCandidate,"productId"|"skuId"|"offerId">) => JSON.stringify([c.productId,c.skuId,c.offerId])
 export class CheckoutCoordinator {
   constructor(private main:SqliteTaskRepository,private repo:SqlitePurchaseRepository,private merchant:MerchantOrderPort){
@@ -17,6 +18,7 @@ export class CheckoutCoordinator {
     const task=this.main.get(taskId,owner)
     ensure(task.intent==="purchase","COMPARE_NOT_EXECUTABLE","比较任务不能准备购买",403)
     ensure(task.requirement && task.requirementVersion===input.expectedVersion,"STALE_VERSION","需要当前完整需求",409)
+    const downstreamRequirement=toShoppingRequirement(task.requirement)
     const prior=this.repo.db.prepare("SELECT * FROM main_checkout_attempts WHERE owner=? AND request_id=?").get(owner,input.requestId)
     if(prior){ensure(prior.task_id===taskId&&prior.version===input.expectedVersion&&prior.candidate_id===input.candidateId,"REQUEST_CONFLICT","请求已用于其他准备",409);return JSON.parse(String(prior.data))}
     ensure(!this.repo.db.prepare("SELECT 1 FROM main_purchase_requests WHERE owner=? AND request_id=?").get(owner,input.requestId),"REQUEST_CONFLICT","请求已用于其他准备",409)
@@ -45,12 +47,12 @@ export class CheckoutCoordinator {
         offer:{currency:quote.currency,itemPriceMinor:f(quote.itemSubtotalMinor),shippingMinor:f(quote.shippingMinor),discountMinor:f(quote.discountMinor),stock:f("available"),deliverable:f(true)},
         quote:{quantity:quote.quantity,destination:quote.destination,totalMinor:f(quote.totalMinor),otherFeesMinor:f(quote.otherFeesMinor),estimatedDeliveryAtMs:f<number>(null),canFulfillQuantity:f(true)}}
       const paymentContext:PaymentContext={taskId,requirementVersion:input.expectedVersion,quote:{productId:candidate.productId,skuId:candidate.skuId,offerId:candidate.offerId,quantity:quote.quantity,destination:quote.destination,currency:quote.currency,totalMinor:quote.totalMinor},methods:[{optionId:"stripe_test_card",cardId:"server-test-card",label:"Stripe 沙盒测试卡",paymentChannel:"credit_card",billingCurrency:"HKD",eligible:f(true),settlementRate:null,feeBps:f(0),fixedFeeMinor:f(0),instantOffer:f({minSpendMinor:0,rateBps:0,amountMinor:0,capMinor:null})}],comparisonRates:[]}
-      const review=await evaluateShoppingCandidates({requirement:task.requirement,quantity:1,candidates:[candidate],searchStatus:"complete",sourceTaskId:taskId,sourceRequirementVersion:input.expectedVersion,sourceSearchInput:shopping.searchInput,paymentContext},checkoutPolicy())
+      const review=await evaluateShoppingCandidates({requirement:downstreamRequirement,quantity:1,candidates:[candidate],searchStatus:"complete",sourceTaskId:taskId,sourceRequirementVersion:input.expectedVersion,sourceSearchInput:shopping.searchInput,paymentContext},checkoutPolicy())
       const ready=review.status==="result_ready"&&review.paymentOptimization?.status==="ready"&&review.paymentOptimization.recommended?.optionId==="stripe_test_card"&&review.paymentOptimization.recommended.costs.chargeMinor===quote.totalMinor
       if(ready){
         const facts=[...Object.values(candidate.attributes),...Object.values(candidate.searchableText??{}),...(candidate.text?[candidate.text.searchable]:[])]
         const expiresAt=Math.min(quote.expiresAt,Date.parse(review.paymentOptimization!.recommended!.validUntil),...facts.filter(f=>f.value!==null&&f.status!=="unverified").map(f=>Math.min(Date.parse(f.fetchedAt)+86400000,f.validUntil?Date.parse(f.validUntil):Infinity)))
-        const evidence:CheckoutEvidence={kind:"demo_catalog_checkout_v1",catalogVersion:c.catalogVersion,sourceDecisionId:shopping.decisionRecord.decisionId,sourceCandidate:structuredClone(source),reviewedCandidate:candidate,requirement:structuredClone(task.requirement),quantity:1,offerId:quote.offerId,quoteId:quote.quoteId,paymentOptionId:"stripe_test_card",paymentContext,review,expiresAt}
+        const evidence:CheckoutEvidence={kind:"demo_catalog_checkout_v1",catalogVersion:c.catalogVersion,sourceDecisionId:shopping.decisionRecord.decisionId,sourceCandidate:structuredClone(source),reviewedCandidate:candidate,requirement:structuredClone(downstreamRequirement),quantity:1,offerId:quote.offerId,quoteId:quote.quoteId,paymentOptionId:"stripe_test_card",paymentContext,review,expiresAt}
         plan.checkout=evidence
         outcome={status:"result_ready",planId:plan.planId,review,quote}
       }else outcome={status:review.status==="result_ready"?"needs_verification":review.status,reason:"报价补充后仍须满足 B 的所有硬条件及支付上下文检查",review,quote}
@@ -65,7 +67,7 @@ export class CheckoutCoordinator {
       const old=this.repo.db.prepare("SELECT plan_id FROM main_purchase_links WHERE task_id=? AND version=?").get(taskId,input.expectedVersion)
       if(old){const p=this.repo.plan(String(old.plan_id));ensure(p.checkout&&candidateId(p.checkout.sourceCandidate)===input.candidateId,"PLAN_CONFLICT","本版本已绑定其他候选",409);outcome={status:"result_ready",planId:p.planId,reused:true}}
       else if(outcome.status==="result_ready"&&plan?.checkout&&quote){
-        const snapshot={taskId,userId:owner,intent:current.intent,requirementVersion:input.expectedVersion,requirement:current.requirement,quantity:1}
+        const snapshot={taskId,userId:owner,intent:current.intent,requirementVersion:input.expectedVersion,requirement:toShoppingRequirement(current.requirement),quantity:1}
         new SandboxExecutionGate().check({mode:"sandbox",task:snapshot,plan,quote,userId:owner,expectedVersion:input.expectedVersion,permitted:true,now:Date.now()})
         this.repo.db.prepare("INSERT OR IGNORE INTO sandbox_tasks VALUES (?,?,?)").run(taskId,owner,JSON.stringify(snapshot))
         this.repo.db.prepare("INSERT INTO sandbox_plans VALUES (?,?,?,?,?)").run(plan.planId,taskId,input.expectedVersion,JSON.stringify(plan),JSON.stringify(quote))

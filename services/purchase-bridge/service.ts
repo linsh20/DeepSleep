@@ -7,6 +7,7 @@ import type { SqlitePurchaseRepository } from "../purchase-execution/repository"
 import { PurchaseExecutionService } from "../purchase-execution/service"
 import { SandboxExecutionGate } from "../purchase-execution/gate"
 import { ensure, type MerchantOrderPort, type PaymentPort, type SandboxPlan, type SandboxTask, type Quote } from "../purchase-execution/types"
+import { toShoppingRequirement } from "../main-agent/shopping-adapter"
 
 // Only an exact, explicit virtual-product request is currently provable by this source.
 // No ShoppingStub result is consumed. Replace this source with saved Shopping plans later.
@@ -17,7 +18,7 @@ export function sandboxSource(task: MainTask): SandboxTask {
   ensure(r.category === "沙盒测试乳液" && r.query === "测试乳液 200ml" && task.requirementDraft.quantity === 1 && r.currency === "HKD" && ["香港", "香港（模拟配送，不采集地址）"].includes(r.destination ?? ""), "NEEDS_VERIFICATION", "仅支持明确的虚拟测试需求：类别「沙盒测试乳液」、商品「测试乳液 200ml」、1件、HKD、香港；其他商品事实未核验", 409)
   ensure(r.hardConstraints.length === 0 && r.preferences.length === 0, "NEEDS_VERIFICATION", "测试商品未验证额外硬条件或偏好，不能忽略；请使用无附加条件的独立测试需求", 409)
   ensure(!r.excludedProductIds.includes("sandbox-lotion"), "NO_MATCH", "测试商品已被排除", 409)
-  return { taskId: task.taskId, userId: task.userId, intent: task.intent, requirementVersion: task.requirementVersion, requirement: r, quantity: 1 }
+  return { taskId: task.taskId, userId: task.userId, intent: task.intent, requirementVersion: task.requirementVersion, requirement: toShoppingRequirement(r), quantity: 1 }
 }
 // Persisted links distinguish authoritative main tasks from historical CLI fixtures.
 export function currentTaskResolver(main: SqliteTaskRepository) {
@@ -29,7 +30,7 @@ export function currentTaskResolver(main: SqliteTaskRepository) {
     const plan=row?JSON.parse(String(row.data)) as SandboxPlan:undefined
     if(!plan?.checkout)return sandboxSource(task)
     ensure(task.requirement,"REQUIREMENT_INCOMPLETE","当前任务缺少完整需求",409)
-    return {taskId:task.taskId,userId:task.userId,intent:task.intent,requirementVersion:task.requirementVersion,requirement:task.requirement,quantity:task.requirementDraft.quantity!}
+    return {taskId:task.taskId,userId:task.userId,intent:task.intent,requirementVersion:task.requirementVersion,requirement:toShoppingRequirement(task.requirement),quantity:task.requirementDraft.quantity!}
   }
 }
 export class PurchaseBridge {

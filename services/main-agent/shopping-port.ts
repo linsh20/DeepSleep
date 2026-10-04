@@ -1,8 +1,9 @@
-import type { Fact, Requirement, SearchErrorCode } from "../../types/index"
+import type { Fact, SearchErrorCode } from "../../types/index"
+import type { MainAgentRequirement } from "./types"
 
-// Proposed integration envelope, separate from MainTask. Reuses canonical Requirement/Fact.
+// Main Agent input uses HKD units; concrete ports adapt it to canonical downstream contracts.
 // Stub and contract envelopes coexist for persisted pre-integration tasks.
-export type ShoppingPortInput = { requirement: Requirement; quantity: number }
+export type ShoppingPortInput = { requirement: MainAgentRequirement; quantity: number }
 export type StubShoppingResult = {
   taskId: string
   requirementVersion: number

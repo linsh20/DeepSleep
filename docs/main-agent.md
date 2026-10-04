@@ -58,7 +58,7 @@ MAIN_AGENT_STUB_SCENARIO=delayed npm run dev -- --hostname 127.0.0.1 --webpack
 {
   "intent": "unclear",
   "requirementDraft": { "query": "粉底" },
-  "missingFields": ["intent", "category", "currency", "budget.maxMinor", "budget.scope", "quantity", "destination"],
+  "missingFields": ["intent", "category", "currency", "budget.maxHKD", "budget.scope", "quantity", "destination"],
   "clarificationQuestions": ["你希望比较方案，还是提出购买任务？本轮均不执行购买。", "……各缺失字段对应的问题"]
 }
 ```
@@ -84,7 +84,7 @@ HTTP 均返回 `{task: MainTask}` 或 `{error:{code,message}}`，session 除外�
     "category": "化妆品",
     "query": "指定品牌粉底 02色 30ml 正装",
     "currency": "HKD",
-    "budget": { "maxMinor": 18000, "scope": "delivered" },
+    "budget": { "maxHKD": 180, "scope": "delivered" },
     "quantity": 1,
     "destination": "香港"
   }

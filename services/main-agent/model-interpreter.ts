@@ -3,7 +3,7 @@ import { draftValue, intentValue, keys, object } from "./requirement-interpreter
 import type { RequirementInterpreter } from "./requirement-interpreter"
 import type { Interpretation, RequirementDraft } from "./types"
 import { TaskError } from "./types"
-import { hkdToMinor } from "./money"
+import { normalizeHKD } from "./money"
 
 // Verified in https://bigbigapi.com/app/guides (OpenAI protocol section), 2026-10-03.
 export const MODEL_ID = "gpt-6.1-sol-plus"
@@ -71,7 +71,7 @@ hardConstraints 和 preferences 在变更集中不是全量数组，而是目标
 色号02必须是字符串"02"。容量单位ml，不得把克转换成ml；单位不明或相对配送日期时区不明要澄清。希望保湿是text.searchable软偏好条件containsAny:["保湿"]；保湿必须满足则硬条件同样表达，并用preferences的对应目标replace:[]删除原偏好。这只是文本匹配，不是功效证明。
 容量改成200到300ml => hardConstraints:[{field:"attributes.volumeMl",replace:[{field:"attributes.volumeMl",op:"gte",value:200},{field:"attributes.volumeMl",op:"lte",value:300}]}]。容量不限=>同一field replace:[]，不要删除包装品牌预算。不要限定品牌=>删除品牌硬条件及品牌偏好（如存在），不编造品牌。
 每个编辑数组仍需evidence.hardConstraints/evidence.preferences当前消息逐字证据；excludedProductIds是全量排除列表，未提及时省略；allowAlternativeProducts仅用户明确允许/禁止替代品才给布尔值。
-必填仅intent/category/query/currency/budget.maxMinor/budget.scope/quantity/destination。品牌色号容量包装关键词期限都可缺省；不要默认正装/肤质/库存/可配送。运费、库存是Shopping查询的商品事实，不问用户。
+必填仅intent/category/query/currency/budget.maxHKD/budget.scope/quantity/destination。品牌色号容量包装关键词期限都可缺省；不要默认正装/肤质/库存/可配送。运费、库存是Shopping查询的商品事实，不问用户。
 只有影响搜索的重要歧义才额外输出ambiguities:[{field:允许条件字段或category/query/budget/quantity/destination,question:简短澄清问题,evidence:当前消息逐字引文}]；无歧义省略。缺少可选项不是歧义。
 category可以由用户商品描述归类；币种必须明确或已有；数量、配送、预算口径缺失就追问，绝不默认。
 每个变更字段必须在evidence里给出当前用户消息的逐字引文，budget.amountHKD和budget.scope分别给出证据。明确删除也需要逐字证据。
@@ -120,10 +120,10 @@ export function parseModelInterpretation(raw: string, input: Parameters<Requirem
         for (const field of Object.keys(b)) {
           const proof = quote(evidence[`budget.${field}`])
           if (field === "amountHKD") {
-            if (b[field] === null) delete budget.maxMinor
+            if (b[field] === null) delete budget.maxHKD
             else {
               if (typeof b[field] !== "string" || !proof.match(/\d+(?:\.\d+)?/g)?.includes(b[field])) throw new Error()
-              budget.maxMinor = hkdToMinor(b[field])
+              budget.maxHKD = normalizeHKD(b[field])
             }
           } else if (b[field] === null) delete budget.scope
           else budget.scope = b[field]
@@ -158,15 +158,16 @@ export function parseModelInterpretation(raw: string, input: Parameters<Requirem
 export class ModelRequirementInterpreter implements RequirementInterpreter {
   constructor(private transport: ModelTransport) {}
   async interpret(input: Parameters<RequirementInterpreter["interpret"]>[0], signal: AbortSignal) {
-    const context = boundedContext(input.context)
-    if (/sk-[a-z0-9_-]{12,}|authorization\s*:|api[_ -]?key\s*[:=]|(?:\d[ -]?){13,19}/i.test(JSON.stringify({ message: input.userMessage, draft: input.currentDraft, context }, (_key, value) => typeof value === "number" ? undefined : value))) {
+    const normalizedInput = { ...input, currentDraft: draftValue(input.currentDraft) }
+    const context = boundedContext(normalizedInput.context)
+    if (/sk-[a-z0-9_-]{12,}|authorization\s*:|api[_ -]?key\s*[:=]|(?:\d[ -]?){13,19}/i.test(JSON.stringify({ message: normalizedInput.userMessage, draft: normalizedInput.currentDraft, context }, (_key, value) => typeof value === "number" ? undefined : value))) {
       throw new TaskError("SENSITIVE_INPUT", "需求或上下文包含疑似密钥或支付信息，请通过表单清除后再对话")
     }
     const output = await this.transport([
       { role: "system", content: prompt },
-      { role: "user", content: JSON.stringify({ currentIntent: input.currentIntent ?? "unclear", currentDraft: input.currentDraft,
-        recentConversation: context, currentMessage: input.userMessage }) },
+      { role: "user", content: JSON.stringify({ currentIntent: normalizedInput.currentIntent ?? "unclear", currentDraft: normalizedInput.currentDraft,
+        recentConversation: context, currentMessage: normalizedInput.userMessage }) },
     ], signal)
-    return parseModelInterpretation(output, input)
+    return parseModelInterpretation(output, normalizedInput)
   }
 }

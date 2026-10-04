@@ -28,7 +28,7 @@ class Payment{
  async confirm(op){this.confirms++;this.objects.get(op.paymentId).status='succeeded';return structuredClone(this.objects.get(op.paymentId))}
  async retrieve(id){return structuredClone(this.objects.get(id))}verifyWebhook(raw){return JSON.parse(raw)}
 }
-const draft=()=>({category:c.category,query:c.title,currency:'HKD',quantity:1,destination:'香港',budget:{maxMinor:20000,scope:'delivered'},hardConstraints:[{field:'attributes.volumeMl',op:'eq',value:200}],preferences:[],excludedProductIds:[]})
+const draft=()=>({category:c.category,query:c.title,currency:'HKD',quantity:1,destination:'香港',budget:{maxHKD:200,scope:'delivered'},hardConstraints:[{field:'attributes.volumeMl',op:'eq',value:200}],preferences:[],excludedProductIds:[]})
 async function setup(t,patch={}){
  const dir=mkdtempSync(join(tmpdir(),'checkout-')),path=join(dir,'test.sqlite'),repo=new SqlitePurchaseRepository(path),main=new SqliteTaskRepository(repo.db),payment=new Payment(),merchant=new DemoMerchantAdapter(repo),bridge=new PurchaseBridge(main,repo,merchant,payment),agent=new MainTaskOrchestrator(main,new DevelopmentRequirementInterpreter(),configuredShoppingPort()),risk=new RiskRepository(repo),auth=new AuthorizationService(risk)
  main.sessions.add('abc-def');const owner=main.owner('abc-def');const created=await agent.create(owner,randomUUID());const task=await agent.save(created.taskId,owner,{requestId:randomUUID(),expectedVersion:0,intent:'purchase',requirementDraft:{...draft(),...patch}});const searched=await agent.search(task.taskId,owner,randomUUID(),task.requirementVersion)
@@ -61,7 +61,7 @@ test('checkout: unknown user hard facts remain verification; supported quote doe
 })
 test('checkout: non-deliverable, over-budget and excluded/hard mismatches stop with no payable plan',async t=>{
  const a=await setup(t,{destination:'澳门'});assert.equal((await a.prepare()).checkoutPreparation.status,'no_match')
- const b=await setup(t,{budget:{maxMinor:16500,scope:'delivered'}});assert.equal((await b.prepare()).checkoutPreparation.status,'no_match');assert.equal(b.bridge.state(b.task.taskId,b.owner).purchases.length,0)
+ const b=await setup(t,{budget:{maxHKD:165,scope:'delivered'}});assert.equal((await b.prepare()).checkoutPreparation.status,'no_match');assert.equal(b.bridge.state(b.task.taskId,b.owner).purchases.length,0)
  const d=await setup(t,{excludedProductIds:[c.productId]});assert.equal((await d.prepare()).checkoutPreparation.status,'no_match');assert.equal(d.payment.creates,0)
 })
 test('checkout: real Watsons candidate remains unsupported, its identity and timestamps stay intact',async t=>{
@@ -73,13 +73,13 @@ test('checkout: request and concurrent prepare dedupe, identity conflicts and cr
  await assert.rejects(s.prepare(id,'different'),{code:'REQUEST_CONFLICT'});await assert.rejects(s.bridge.prepare(s.task.taskId,s.owner,{requestId:id,expectedVersion:1}),{code:'REQUEST_CONFLICT'})
 })
 test('checkout: prepare races requirement change; existing quote expiry and version cannot pay',async t=>{
- const s=await setup(t);const original=s.merchant.quote.bind(s.merchant);s.merchant.quote=async p=>{const q=await original(p);await s.agent.save(s.task.taskId,s.owner,{expectedVersion:1,requestId:randomUUID(),intent:'purchase',requirementDraft:{...draft(),budget:{maxMinor:19000,scope:'delivered'}}});return q};await assert.rejects(s.prepare(),{code:'STALE_VERSION'});assert.equal(s.repo.db.prepare('SELECT count(*) n FROM sandbox_plans').get().n,0)
+ const s=await setup(t);const original=s.merchant.quote.bind(s.merchant);s.merchant.quote=async p=>{const q=await original(p);await s.agent.save(s.task.taskId,s.owner,{expectedVersion:1,requestId:randomUUID(),intent:'purchase',requirementDraft:{...draft(),budget:{maxHKD:190,scope:'delivered'}}});return q};await assert.rejects(s.prepare(),{code:'STALE_VERSION'});assert.equal(s.repo.db.prepare('SELECT count(*) n FROM sandbox_plans').get().n,0)
  const b=await setup(t);b.authorize();const v=await b.prepare();const q=v.purchases[0].quote;signedExpiry(b,q,v.purchases[0].plan.planId);await assert.rejects(b.execute(v),{code:'QUOTE_EXPIRED'});assert.equal(b.payment.confirms,0)
 })
 function signedExpiry(s,q,id){s.repo.db.prepare('UPDATE sandbox_plans SET quote=? WHERE id=?').run(JSON.stringify({...q,expiresAt:Date.now()-1}),id)}
 test('checkout: confirmed hold cannot survive changed quote/authorization; unknown old transaction blocks replacement',async t=>{
  const s=await setup(t);s.authorize({singleSoftMinor:10000});const v=await s.prepare();await s.execute(v);const confirmation=s.risk.view(s.owner).confirmations[0];new ConfirmationService(s.risk,currentTaskResolver(s.main)).respond(s.owner,confirmation.confirmationId,true);s.auth.revoke(s.owner,1,randomUUID());assert.equal((await s.execute(v)).purchases[0].operation.paymentStatus,'not_started');assert.equal(s.payment.confirms,0)
- const b=await setup(t);b.authorize();const first=await b.prepare();b.payment.onCreate=async()=>{throw Error('unknown transport')};assert.equal((await b.execute(first)).purchases[0].operation.paymentStatus,'unknown');await b.agent.save(b.task.taskId,b.owner,{requestId:randomUUID(),expectedVersion:1,intent:'purchase',requirementDraft:{...draft(),budget:{maxMinor:19000,scope:'delivered'}}});await assert.rejects(b.bridge.prepare(b.task.taskId,b.owner,{expectedVersion:2,requestId:randomUUID(),candidateId:candidateId(b.searched.shoppingResult.candidates[0])}),{code:'PRIOR_PAYMENT_UNRESOLVED'})
+ const b=await setup(t);b.authorize();const first=await b.prepare();b.payment.onCreate=async()=>{throw Error('unknown transport')};assert.equal((await b.execute(first)).purchases[0].operation.paymentStatus,'unknown');await b.agent.save(b.task.taskId,b.owner,{requestId:randomUUID(),expectedVersion:1,intent:'purchase',requirementDraft:{...draft(),budget:{maxHKD:190,scope:'delivered'}}});await assert.rejects(b.bridge.prepare(b.task.taskId,b.owner,{expectedVersion:2,requestId:randomUUID(),candidateId:candidateId(b.searched.shoppingResult.candidates[0])}),{code:'PRIOR_PAYMENT_UNRESOLVED'})
 })
 test('checkout: database restart recovers Shopping evidence, authorization, quote, operation and payment',async t=>{
  const s=await setup(t);s.authorize();const v=await s.prepare(),done=await s.execute(v);const repo=new SqlitePurchaseRepository(s.path);t.after(()=>repo.close());const main=new SqliteTaskRepository(repo.db),bridge=new PurchaseBridge(main,repo,new DemoMerchantAdapter(repo),s.payment),risk=new RiskRepository(repo);const restored=bridge.state(s.task.taskId,s.owner);assert.deepEqual(restored.purchases[0].plan,done.purchases[0].plan);assert.equal(restored.purchases[0].operation.paymentId,done.purchases[0].operation.paymentId);assert.equal(risk.current(s.owner).version,1);assert.equal(risk.view(s.owner).reservations[0].state,'spent')
@@ -91,7 +91,7 @@ test('checkout HTTP accepts only candidate identity, never price/merchant/creden
 test('checkout: accepted soft exception cannot authorize a changed quote or task version',async t=>{
  for(const change of ['quote','task']){const s=await setup(t);s.authorize({singleSoftMinor:10000});const v=await s.prepare();await s.execute(v);const confirmation=s.risk.view(s.owner).confirmations[0];new ConfirmationService(s.risk,currentTaskResolver(s.main)).respond(s.owner,confirmation.confirmationId,true)
  if(change==='quote'){const q=v.purchases[0].quote;s.repo.db.prepare('UPDATE sandbox_plans SET quote=? WHERE id=?').run(JSON.stringify({...q,quoteId:randomUUID(),totalMinor:18000,itemSubtotalMinor:17000}),v.purchases[0].plan.planId);assert.equal((await s.execute(v)).purchases[0].operation.errorCode,'QUOTE_MISMATCH')}
- else {await s.agent.save(s.task.taskId,s.owner,{expectedVersion:1,requestId:randomUUID(),intent:'purchase',requirementDraft:{...draft(),budget:{maxMinor:19000,scope:'delivered'}}});await assert.rejects(s.execute(v),{code:'STALE_VERSION'})}
+ else {await s.agent.save(s.task.taskId,s.owner,{expectedVersion:1,requestId:randomUUID(),intent:'purchase',requirementDraft:{...draft(),budget:{maxHKD:190,scope:'delivered'}}});await assert.rejects(s.execute(v),{code:'STALE_VERSION'})}
  assert.equal(s.payment.confirms,0)}
 })
 test('checkout: current requirement is checked again after PaymentIntent creation',async t=>{

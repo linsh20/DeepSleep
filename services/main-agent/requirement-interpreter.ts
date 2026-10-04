@@ -1,7 +1,7 @@
 import { constraintsValue, preferencesValue, stringList, checkConflicts, withoutPromotedPreferences } from "./conditions"
-import type { Requirement } from "../../types/index"
 import { TaskError } from "./types"
-import type { Interpretation, RequirementDraft, TaskIntent } from "./types"
+import type { Interpretation, MainAgentRequirement, RequirementDraft, TaskIntent } from "./types"
+import { normalizeHKD } from "./money"
 
 export interface RequirementInterpreter {
   interpret(input: {
@@ -41,11 +41,17 @@ export function draftValue(value: unknown): RequirementDraft {
   }
   if (source.budget !== undefined && source.budget !== null) {
     const b = object(source.budget)
-    keys(b, ["maxMinor", "scope"])
+    keys(b, ["maxHKD", "maxMinor", "scope"])
+    if (b.maxHKD !== undefined && b.maxMinor !== undefined) throw new TaskError("INVALID_INPUT", "预算不能同时使用 maxHKD 和旧 maxMinor")
     const budget: NonNullable<RequirementDraft["budget"]> = {}
-    if (b.maxMinor !== undefined && b.maxMinor !== null) {
-      if (!Number.isSafeInteger(b.maxMinor) || Number(b.maxMinor) <= 0) throw new TaskError("INVALID_INPUT", "预算须为正整数港仙")
-      budget.maxMinor = Number(b.maxMinor)
+    if (b.maxHKD !== undefined && b.maxHKD !== null) {
+      if (typeof b.maxHKD !== "number") throw new TaskError("INVALID_INPUT", "预算须为 HKD 数值")
+      try { budget.maxHKD = normalizeHKD(b.maxHKD) }
+      catch { throw new TaskError("INVALID_INPUT", "预算须为正数 HKD，最多两位小数") }
+    } else if (b.maxMinor !== undefined && b.maxMinor !== null) {
+      // Read compatibility for persisted development tasks and older form payloads.
+      if (!Number.isSafeInteger(b.maxMinor) || Number(b.maxMinor) <= 0) throw new TaskError("INVALID_INPUT", "旧预算港仙值无效")
+      budget.maxHKD = Number(b.maxMinor) / 100
     }
     if (b.scope !== undefined && b.scope !== null && b.scope !== "") {
       if (b.scope !== "item" && b.scope !== "delivered") throw new TaskError("INVALID_INPUT", "预算口径无效")
@@ -77,20 +83,20 @@ export function clarify(intent: TaskIntent, requirementDraft: RequirementDraft):
   need("category", requirementDraft.category, "请填写商品类别。")
   need("query", requirementDraft.query, "请说明希望搜索的商品。")
   need("currency", requirementDraft.currency, "请明确币种（本轮支持 HKD）。")
-  need("budget.maxMinor", requirementDraft.budget?.maxMinor, "预算上限是多少港币（HKD 元）？")
+  need("budget.maxHKD", requirementDraft.budget?.maxHKD, "预算上限是多少港币（HKD 元）？")
   need("budget.scope", requirementDraft.budget?.scope, "预算是商品金额还是含运费总额？")
   need("quantity", requirementDraft.quantity, "需要多少件？")
   need("destination", requirementDraft.destination, "配送地区是什么？无需填写详细地址。")
   return { intent, requirementDraft, missingFields, clarificationQuestions }
 }
-export function completeRequirement(value: Interpretation, taskId: string, requirementVersion: number): Requirement | null {
+export function completeRequirement(value: Interpretation, taskId: string, requirementVersion: number): MainAgentRequirement | null {
   // Recompute completeness ourselves; neither interpreter nor browser controls readiness.
   const draft = draftValue(value.requirementDraft)
   if (clarify(intentValue(value.intent), draft).missingFields.length) return null
-  if (!draft.category || !draft.query || !draft.currency || !draft.destination || !draft.budget?.maxMinor || !draft.budget.scope) return null
+  if (!draft.category || !draft.query || !draft.currency || !draft.destination || !draft.budget?.maxHKD || !draft.budget.scope) return null
   return { taskId, requirementVersion, category: draft.category, query: draft.query,
     currency: draft.currency, destination: draft.destination,
-    budget: { maxMinor: draft.budget.maxMinor, scope: draft.budget.scope },
+    budget: { maxHKD: draft.budget.maxHKD, scope: draft.budget.scope },
     hardConstraints: draft.hardConstraints ?? [], preferences: draft.preferences ?? [], excludedProductIds: draft.excludedProductIds ?? [],
     ...(draft.allowAlternativeProducts !== undefined ? { allowAlternativeProducts: draft.allowAlternativeProducts } : {}) }
 }

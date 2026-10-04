@@ -5,7 +5,7 @@ import { AgentPurchaseDebug } from "@/components/agent-purchase-debug"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { hkdToMinor, minorToHKD } from "@/services/main-agent/money"
+import { normalizeHKD } from "@/services/main-agent/money"
 import type { ModelConnection } from "@/services/main-agent/model-interpreter"
 import type { MainTask } from "@/services/main-agent/types"
 
@@ -76,7 +76,7 @@ export function AgentDebug() {
       await send({ path: `tasks/${task.taskId}/requirements`, body: {
         requestId: crypto.randomUUID(), expectedVersion: task.requirementVersion, intent: val("intent"),
         requirementDraft: { ...task.requirementDraft, category: val("category"), query: val("query"), currency: val("currency"), destination: val("destination"),
-          quantity: num("quantity"), budget: { maxMinor: val("maxHKD") === "" ? undefined : hkdToMinor(val("maxHKD")), scope: val("scope") } },
+          quantity: num("quantity"), budget: { maxHKD: val("maxHKD") === "" ? undefined : normalizeHKD(val("maxHKD")), scope: val("scope") } },
       } })
     } catch (e) { setError(String(e)); void refresh(task.taskId).catch(() => {}) } finally { setBusy(false) }
   }
@@ -122,7 +122,7 @@ export function AgentDebug() {
           <label>类别<Input name="category" defaultValue={task.requirementDraft.category ?? ""} placeholder="例如：化妆品" /></label>
           <label className="sm:col-span-2">商品与规格<Input name="query" defaultValue={task.requirementDraft.query ?? ""} placeholder="商品名称或类别；其他条件按需补充" /></label>
           <label>币种<select name="currency" defaultValue={task.requirementDraft.currency ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="HKD">HKD</option></select></label>
-          <label>预算上限（HKD 元）<Input name="maxHKD" type="number" min="0.01" step="0.01" defaultValue={task.requirementDraft.budget?.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : ""} /></label>
+          <label>预算上限（HKD 元）<Input name="maxHKD" type="number" min="0.01" step="0.01" defaultValue={task.requirementDraft.budget?.maxHKD ?? ""} /></label>
           <label>预算口径<select name="scope" defaultValue={task.requirementDraft.budget?.scope ?? ""} className="block w-full rounded border p-2"><option value="">请选择</option><option value="item">商品金额</option><option value="delivered">含运费总额</option></select></label>
           <label>数量<Input name="quantity" defaultValue={task.requirementDraft.quantity ?? ""} type="number" min="1" max="100" step="1" /></label>
           <label>配送地区<Input name="destination" defaultValue={task.requirementDraft.destination ?? ""} placeholder="例如：香港" /></label>
@@ -139,12 +139,12 @@ export function AgentDebug() {
         <h2 className="font-semibold">缺失字段与澄清问题</h2>
         <p>{task.missingFields.join("、") || "无缺失字段"}</p>
         <ul>{task.clarificationQuestions.map(q => <li key={q}>{q}</li>)}</ul>
-        <h2 className="font-semibold">当前需求草稿</h2><pre className="overflow-auto text-sm">{JSON.stringify({ ...task.requirementDraft, budget: task.requirementDraft.budget ? { maxHKD: task.requirementDraft.budget.maxMinor ? minorToHKD(task.requirementDraft.budget.maxMinor) : null, scope: task.requirementDraft.budget.scope } : undefined }, null, 2)}</pre>
+        <h2 className="font-semibold">当前需求草稿</h2><pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft, null, 2)}</pre>
         <h2 className="font-semibold">硬条件（只读）</h2>
         <pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft.hardConstraints ?? [], null, 2)}</pre>
         <h2 className="font-semibold">偏好及相对权重（只读）</h2>
         <pre className="overflow-auto text-sm">{JSON.stringify(task.requirementDraft.preferences ?? [], null, 2)}</pre>
-        <p>预算 {task.requirementDraft.budget?.maxMinor ? `${minorToHKD(task.requirementDraft.budget.maxMinor)} HKD` : "未指定"} · {task.requirementDraft.budget?.scope === "delivered" ? "含运费总额" : "商品金额"} · 数量 {task.requirementDraft.quantity ?? "未指定"} · 配送 {task.requirementDraft.destination ?? "未指定"}</p>
+        <p>预算 {task.requirementDraft.budget?.maxHKD ? `${task.requirementDraft.budget.maxHKD} HKD` : "未指定"} · {task.requirementDraft.budget?.scope === "delivered" ? "含运费总额" : "商品金额"} · 数量 {task.requirementDraft.quantity ?? "未指定"} · 配送 {task.requirementDraft.destination ?? "未指定"}</p>
         <p>条件可通过聊天修改；此表单保存其他字段时保留条件。审核区分未知与不满足；文本匹配不证明功效。</p>
         <h2 className="font-semibold">实际传给 ShoppingPort 的请求（港仙；无对话或凭据）</h2>
         <pre className="overflow-auto text-sm">{task.shoppingRequest ? JSON.stringify(task.shoppingRequest, null, 2) : "当前版本尚未发送请求"}</pre>
