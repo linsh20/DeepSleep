@@ -9,8 +9,9 @@
 | 阅读顺序 | 文件 | 用途 |
 | --- | --- | --- |
 | 1 | [两个授权表案例与需求转录值](DEMO_CASES.md) | 按授权表格式展示模拟填写结果，并转录到当前 `/agent` 表单 |
-| 2 | [数据与字段交接](DATA_AND_CONTRACT.md) | 数据范围、启动、Agent 字段、核验边界 |
-| 3 | [原始调用说明](../../data/watson/MULTIPLATFORM_DEMO.md) | API 命令、重建 SQL、验证命令 |
+| 2 | [前端授权书页面开发指导](FRONTEND_AUTHORIZATION_FORM.md) | 全部控件、字段模型、两个 Case 预填值、接口映射及验收标准 |
+| 3 | [数据与字段交接](DATA_AND_CONTRACT.md) | 数据范围、启动、Agent 字段、核验边界 |
+| 4 | [原始调用说明](../../data/watson/MULTIPLATFORM_DEMO.md) | API 命令、重建 SQL、验证命令 |
 
 ## 五分钟启动
 
