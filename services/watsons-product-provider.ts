@@ -21,6 +21,16 @@ type WatsonsProductRow = {
   price: unknown
   ingredients: unknown
   raw_json: unknown
+  offer_id?: unknown
+  sku_code?: unknown
+  platform_id?: unknown
+  merchant_id?: unknown
+  merchant_name?: unknown
+  offer_price?: unknown
+  product_url?: unknown
+  fact_source?: unknown
+  fact_status?: unknown
+  offer_fetched_at?: unknown
 }
 
 type SnapshotMetadata = {
@@ -61,13 +71,25 @@ export class WatsonsSqliteProductProvider implements ProductProvider {
       const metadata = readSnapshotMetadata(database)
       assertSupportedSnapshot(metadata)
       const fetchedAt = String(metadata.exported_at)
-      const rows = database.prepare(`
-        SELECT code, name, brand, price, ingredients, raw_json
-        FROM products
-        WHERE category_status = ?
-        ORDER BY code
-        LIMIT ?
-      `).all(CONFIRMED_CATEGORY, limit) as WatsonsProductRow[]
+      const rows = hasProductOffers(database)
+        ? database.prepare(`
+            SELECT p.code, p.name, p.brand, p.price, p.ingredients, p.raw_json,
+              o.offer_id, o.sku_code, o.platform_id, o.merchant_id, o.merchant_name,
+              o.price AS offer_price, o.product_url, o.fact_source, o.fact_status,
+              o.fetched_at AS offer_fetched_at
+            FROM products AS p
+            JOIN product_offers AS o ON o.product_code = p.code
+            WHERE p.category_status = ?
+            ORDER BY p.code, o.platform_id
+            LIMIT ?
+          `).all(CONFIRMED_CATEGORY, limit) as WatsonsProductRow[]
+        : database.prepare(`
+            SELECT code, name, brand, price, ingredients, raw_json
+            FROM products
+            WHERE category_status = ?
+            ORDER BY code
+            LIMIT ?
+          `).all(CONFIRMED_CATEGORY, limit) as WatsonsProductRow[]
 
       const products: RawProduct[] = []
       let rejected = 0
@@ -120,6 +142,14 @@ function assertSupportedSnapshot(metadata: SnapshotMetadata): void {
   }
 }
 
+function hasProductOffers(database: DatabaseSync): boolean {
+  return database.prepare(`
+    SELECT 1 AS present
+    FROM sqlite_master
+    WHERE type = 'table' AND name = 'product_offers'
+  `).get() !== undefined
+}
+
 function mapWatsonsProduct(row: WatsonsProductRow, fetchedAt: string): RawProduct {
   if (typeof row.raw_json !== "string") throw new Error("Missing raw product")
   const parsed: unknown = JSON.parse(row.raw_json)
@@ -129,8 +159,15 @@ function mapWatsonsProduct(row: WatsonsProductRow, fetchedAt: string): RawProduc
   const title = cleanText(row.name) ?? cleanText(parsed.name)
   const brand = cleanText(row.brand)
   const ingredients = cleanText(row.ingredients)
-  const variantCode = cleanText(parsed.defaultVariantCode) ?? cleanText(parsed.ean) ?? code
-  const price = moneyMinor(readNestedNumber(parsed, "price", "value") ?? finiteNumber(row.price))
+  const variantCode = cleanText(row.sku_code) ?? cleanText(parsed.defaultVariantCode) ?? cleanText(parsed.ean) ?? code
+  const price = moneyMinor(finiteNumber(row.offer_price) ?? readNestedNumber(parsed, "price", "value") ?? finiteNumber(row.price))
+  const offerId = cleanText(row.offer_id)
+  const platformId = cleanText(row.platform_id)
+  const merchantId = cleanText(row.merchant_id)
+  const merchantName = cleanText(row.merchant_name)
+  const source = cleanText(row.fact_source) ?? SOURCE
+  const status = factStatus(row.fact_status) ?? "verified"
+  const rowFetchedAt = cleanText(row.offer_fetched_at) ?? fetchedAt
   const listPrice = moneyMinor(readNestedNumber(parsed, "elabOldPrice", "value") ?? readNestedNumber(parsed, "elabPrice", "value"))
   const description = cleanHtmlText(parsed.description) ?? cleanText(parsed.shortDescription)
   const categoryPath = cleanText(parsed.gtmCategoryPath)
@@ -144,13 +181,16 @@ function mapWatsonsProduct(row: WatsonsProductRow, fetchedAt: string): RawProduc
   return {
     productId: `watsons-product:${code}`,
     skuId: `watsons-sku:${variantCode}`,
-    offerId: `watsons-offer-hk:${code}:${variantCode}`,
+    offerId: offerId ? `marketplace-offer:${offerId}` : `watsons-offer-hk:${code}:${variantCode}`,
     title,
-    url: watsonsUrl(parsed.url),
+    url: row.product_url === undefined ? watsonsUrl(parsed.url) : productUrl(row.product_url),
     category,
-    source: SOURCE,
-    fetchedAt,
-    status: "verified",
+    source,
+    fetchedAt: rowFetchedAt,
+    status,
+    ...(platformId && merchantId && merchantName ? {
+      merchant: { id: merchantId, name: merchantName, platformId },
+    } : {}),
     searchableText: {
       description,
       ingredients: meaningfulIngredients(ingredients),
@@ -243,6 +283,17 @@ function watsonsUrl(value: unknown): string {
   const url = new URL(value, WATSONS_ORIGIN)
   if (url.protocol !== "https:" || url.hostname !== "www.watsons.com.hk") throw new Error("Invalid product URL")
   return url.href
+}
+
+function productUrl(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) throw new Error("Missing product URL")
+  const url = new URL(value)
+  if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Invalid product URL")
+  return url.href
+}
+
+function factStatus(value: unknown): "verified" | "unverified" | "mock" | null {
+  return value === "verified" || value === "unverified" || value === "mock" ? value : null
 }
 
 function deepestCategory(value: unknown): string | null {

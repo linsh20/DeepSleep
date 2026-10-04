@@ -14,6 +14,9 @@ requireTS.extensions[".ts"] = (module, filename) => {
 
 const { WatsonsSqliteProductProvider } = requireTS("../services/watsons-product-provider.ts")
 const { assessCondition } = requireTS("../services/search-filter.ts")
+const { createProductSearch } = requireTS("../services/product-search.ts")
+const { DeterministicConditionScorer } = requireTS("../services/condition-scorer.ts")
+const { adaptSearchCandidate } = requireTS("../services/shopping-agent.ts")
 
 const input = {
   taskId: "watsons-provider-test",
@@ -56,6 +59,44 @@ test("capacity conflicts and missing facts remain unknown instead of being inven
   assert.equal(byId.get("watsons-product:BP_819058").searchableText.ingredients, null)
   assert.ok(result.products.some((product) => product.attributes.rating === null))
   assert.ok(result.products.every((product) => !String(product.searchableText.description).includes("<img")))
+})
+
+test("multi-platform demo keeps product and SKU identity stable while offers and merchants differ", async () => {
+  const provider = new WatsonsSqliteProductProvider({
+    databasePath: "data/watson/data/products.demo-multiplatform.db",
+  })
+  const recall = await provider.recall("", 500, {
+    input,
+    signal: new AbortController().signal,
+  })
+  assert.equal(recall.status, "complete")
+  assert.equal(recall.products.length, 397)
+
+  const offers = recall.products.filter(product => product.productId === "watsons-product:BP_119795")
+  assert.equal(offers.length, 3)
+  assert.equal(new Set(offers.map(product => product.productId)).size, 1)
+  assert.equal(new Set(offers.map(product => product.skuId)).size, 1)
+  assert.equal(new Set(offers.map(product => product.offerId)).size, 3)
+  assert.deepEqual(new Set(offers.map(product => product.merchant.platformId)),
+    new Set(["watsons-hk", "sasa-hk", "mannings-hk"]))
+  assert.equal(offers.find(product => product.merchant.platformId === "watsons-hk").status, "verified")
+  assert.ok(offers.filter(product => product.merchant.platformId !== "watsons-hk")
+    .every(product => product.status === "mock" && product.source === "mock-dataset"))
+
+  const search = createProductSearch(provider, new DeterministicConditionScorer(), { recallLimit: 500 })
+  for (const [filename, productId] of [
+    ["multiplatform-moisturizer.request.json", "watsons-product:BP_119795"],
+    ["multiplatform-toner.request.json", "watsons-product:BP_235677"],
+  ]) {
+    const searchInput = JSON.parse(readFileSync(new URL(`../examples/${filename}`, import.meta.url), "utf8"))
+    const result = await search.searchProducts(searchInput)
+    assert.equal(result.outcome, "ranked")
+    const candidates = result.candidates.map(row => row.candidate)
+      .filter(candidate => candidate.productId === productId)
+    assert.equal(candidates.length, 3)
+    assert.ok(candidates.every(candidate => candidate.merchant.platformId.value.endsWith("-hk")))
+    assert.ok(candidates.every(candidate => !adaptSearchCandidate(candidate).missingFields.includes("merchant")))
+  }
 })
 
 test("ingredient-scoped exclusions distinguish volatile alcohol, fatty alcohol, and unknown", () => {

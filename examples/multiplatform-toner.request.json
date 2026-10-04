@@ -1,0 +1,11 @@
+{
+  "taskId": "demo-toner-001",
+  "requirementVersion": 1,
+  "product_name": {
+    "value": "LIGHTENING AND MOISTURIZING TONER 120ML",
+    "must": 1
+  },
+  "range_conditions": [],
+  "include_keywords": [],
+  "exclude_keywords": []
+}

@@ -16,6 +16,11 @@ export type RawProduct = ProductIdentity & {
   source: string
   fetchedAt: string
   status: FactStatus
+  merchant?: {
+    id: string
+    name: string
+    platformId: string
+  }
   searchableText: Record<string, string | null>
   attributes: Record<string, AttributeValue | null>
   offer: {
