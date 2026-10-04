@@ -11,7 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test --experimental-strip-types lib/agent-b/*.test.ts tests/*.test.mjs",
-    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/*.test.ts tests/shopping-integration.test.mjs"
+    "test:agent-b": "node --test --experimental-strip-types lib/agent-b/*.test.ts tests/shopping-integration.test.mjs",
+    "test:payment-data": "node --test --experimental-strip-types lib/payment-data/*.test.ts",
+    "payment:seed": "node --experimental-strip-types scripts/seed-payment-db.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

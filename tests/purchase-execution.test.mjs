@@ -42,8 +42,9 @@ function setup(t, opts = {}) {
   const repo = new SqlitePurchaseRepository(path), payment = opts.payment ?? new ControlledPayment()
   const merchant = new DemoMerchantAdapter(repo, opts.now)
   const agent = new PurchaseExecutionService(repo, merchant, new SandboxExecutionGate(), payment, opts)
-  t.after(() => { try { repo.close() } catch {} rmSync(dir, { recursive: true, force: true }) })
-  return { repo, payment, merchant, agent, path }
+  const extraRepos = []
+  t.after(() => { for (const extra of extraRepos) extra.close(); try { repo.close() } catch {} rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 }) })
+  return { repo, payment, merchant, agent, path, trackRepo: extra => { extraRepos.push(extra); return extra } }
 }
 const fixture = agent => agent.createFixture("owner", randomUUID())
 const execute = (agent, v, more = {}) => agent.execute("owner", { planId: v.plan.planId, expectedVersion: v.task.requirementVersion, requestId: randomUUID(), testPermission: true, ...more })
@@ -107,9 +108,8 @@ test("confirmation timeout: read existing PI, never create or confirm a second p
   assert.equal(payment.creates.length, 1); assert.equal(payment.confirms.length, 1)
 })
 test("cross-connection concurrent execution and changed requestId use one durable operation", async t => {
-  const { agent, payment, path } = setup(t)
-  const repo2 = new SqlitePurchaseRepository(path)
-  t.after(() => repo2.close())
+  const { agent, payment, path, trackRepo } = setup(t)
+  const repo2 = trackRepo(new SqlitePurchaseRepository(path))
   const agent2 = new PurchaseExecutionService(repo2, new DemoMerchantAdapter(repo2), new SandboxExecutionGate(), payment)
   let entered, release
   const started = new Promise(r => { entered = r })
@@ -124,13 +124,12 @@ test("cross-connection concurrent execution and changed requestId use one durabl
   assert.equal(payment.creates.length, 1); assert.equal(payment.confirms.length, 1)
 })
 test("database restart preserves operation, orders, sessions and fixture request deduplication", async t => {
-  const { repo, agent, payment, path } = setup(t)
+  const { repo, agent, payment, path, trackRepo } = setup(t)
   const session = repo.newSession(), requestId = randomUUID()
   const v = await agent.createFixture(session.owner, requestId)
   const done = await agent.execute(session.owner, { planId: v.plan.planId, expectedVersion: 1, requestId: randomUUID(), testPermission: true })
   repo.close()
-  const restored = new SqlitePurchaseRepository(path)
-  t.after(() => restored.close())
+  const restored = trackRepo(new SqlitePurchaseRepository(path))
   const restarted = new PurchaseExecutionService(restored, new DemoMerchantAdapter(restored), new SandboxExecutionGate(), payment)
   assert.equal(restored.session(session.token).owner, session.owner)
   const same = await restarted.createFixture(session.owner, requestId)

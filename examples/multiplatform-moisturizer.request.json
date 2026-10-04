@@ -1,0 +1,11 @@
+{
+  "taskId": "demo-moisturizer-001",
+  "requirementVersion": 1,
+  "product_name": {
+    "value": "BIRCH JUICE MOISTURIZING CREAM 80ml",
+    "must": 1
+  },
+  "range_conditions": [],
+  "include_keywords": [],
+  "exclude_keywords": []
+}
