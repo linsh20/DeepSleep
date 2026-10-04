@@ -10,49 +10,77 @@ export const MODEL_ID = "gpt-6.1-sol-plus"
 export const MODEL_ENDPOINT = "https://api.bigbigapi.com/chat/completions"
 export type ModelConnection = { state: "missing_config" | "untested" | "connected" | "error"; model: string; checkedAt?: string; code?: string }
 export type ModelTransport = (messages: { role: "system" | "user" | "assistant"; content: string }[], signal: AbortSignal) => Promise<string>
+export type ModelTransportOptions = { endpoint?: string; model?: string; maxAttempts?: number; retryDelayMs?: number }
 
-export function createBigBigTransport(getKey: () => string | undefined, fetcher: typeof fetch = fetch) {
-  let last: ModelConnection = { state: "untested", model: MODEL_ID }
-  const status = (): ModelConnection => getKey()?.trim() ? { ...last } : { state: "missing_config", model: MODEL_ID, code: "MODEL_NOT_CONFIGURED" }
+export function createBigBigTransport(getKey: () => string | undefined, fetcher: typeof fetch = fetch, options: ModelTransportOptions = {}) {
+  const endpoint = options.endpoint?.trim() || MODEL_ENDPOINT
+  const model = options.model?.trim() || MODEL_ID
+  const maxAttempts = options.maxAttempts ?? 2
+  const retryDelayMs = options.retryDelayMs ?? 250
+  let parsedEndpoint: URL
+  try { parsedEndpoint = new URL(endpoint) } catch { throw new TaskError("MODEL_CONFIG_INVALID", "LLM_API_URL 必须是完整 HTTPS 地址", 500) }
+  if (parsedEndpoint.protocol !== "https:" || parsedEndpoint.username || parsedEndpoint.password || !model || !Number.isSafeInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 3 || !Number.isSafeInteger(retryDelayMs) || retryDelayMs < 0 || retryDelayMs > 2000) {
+    throw new TaskError("MODEL_CONFIG_INVALID", "模型端点、模型名或重试配置无效", 500)
+  }
+  let last: ModelConnection = { state: "untested", model }
+  const status = (): ModelConnection => getKey()?.trim() ? { ...last } : { state: "missing_config", model, code: "MODEL_NOT_CONFIGURED" }
   const complete: ModelTransport = async (messages, signal) => {
     const key = getKey()?.trim()
     if (!key) throw new TaskError("MODEL_NOT_CONFIGURED", "请在服务端 .env.local 填写 LLM_API_KEY 并重启开发服务", 503)
     try {
-      const response = await fetcher(MODEL_ENDPOINT, { method: "POST", redirect: "error", signal,
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-        body: JSON.stringify({ model: MODEL_ID, stream: false, messages }),
-      })
-      if (!response.ok) {
-        await response.body?.cancel()
-        throw new TaskError("MODEL_HTTP_ERROR", `模型服务返回 HTTP ${response.status}；未重试或更换模型`, 502)
-      }
-      // Bound response size before parsing. Never return/log provider errors or raw output.
-      const reader = response.body?.getReader()
-      if (!reader) throw new TaskError("MODEL_INVALID_RESPONSE", "模型响应为空", 502)
-      let raw = "", size = 0
-      const decoder = new TextDecoder()
-      try {
-        for (;;) {
-          const { done, value } = await reader.read()
-          if (done) break
-          size += value.byteLength
-          if (size > 65536) { await reader.cancel(); throw new TaskError("MODEL_INVALID_RESPONSE", "模型响应过长", 502) }
-          raw += decoder.decode(value, { stream: true })
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const response = await fetcher(endpoint, { method: "POST", redirect: "error", signal,
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+            body: JSON.stringify({ model, stream: false, messages }),
+          })
+          if (!response.ok) {
+            await response.body?.cancel()
+            const retryable = response.status === 408 || response.status === 429 || response.status >= 500
+            if (retryable && attempt < maxAttempts && !signal.aborted) {
+              if (retryDelayMs) await new Promise(resolve => setTimeout(resolve, retryDelayMs))
+              continue
+            }
+            throw new TaskError("MODEL_HTTP_ERROR", `模型服务返回 HTTP ${response.status}；已尝试 ${attempt} 次`, 502)
+          }
+          // Bound response size before parsing. Never return/log provider errors or raw output.
+          const reader = response.body?.getReader()
+          if (!reader) throw new TaskError("MODEL_INVALID_RESPONSE", "模型响应为空", 502)
+          let raw = "", size = 0
+          const decoder = new TextDecoder()
+          try {
+            for (;;) {
+              const { done, value } = await reader.read()
+              if (done) break
+              size += value.byteLength
+              if (size > 65536) { await reader.cancel(); throw new TaskError("MODEL_INVALID_RESPONSE", "模型响应过长", 502) }
+              raw += decoder.decode(value, { stream: true })
+            }
+            raw += decoder.decode()
+          } finally { reader.releaseLock() }
+          let envelope
+          try { envelope = object(JSON.parse(raw)) } catch { throw new TaskError("MODEL_INVALID_RESPONSE", "模型服务响应不是合法 JSON", 502) }
+          const choice = Array.isArray(envelope.choices) ? object(envelope.choices[0]) : {}
+          const message = choice.message ? object(choice.message) : {}
+          if (message.refusal || choice.finish_reason === "content_filter") throw new TaskError("MODEL_REFUSED", "模型拒绝处理此请求", 422)
+          if (choice.finish_reason !== "stop" || typeof message.content !== "string" || !message.content.trim()) throw new TaskError("MODEL_INVALID_RESPONSE", "模型回复不完整或格式不支持", 502)
+          if (signal.aborted) throw new TaskError("MODEL_TIMEOUT", "模型请求超时，已停止重试", 504)
+          last = { state: "connected", model, checkedAt: new Date().toISOString() }
+          return message.content
+        } catch (error) {
+          if (error instanceof TaskError) throw error
+          if (signal.aborted) throw new TaskError("MODEL_TIMEOUT", "模型请求超时，已停止重试", 504)
+          if (attempt < maxAttempts) {
+            if (retryDelayMs) await new Promise(resolve => setTimeout(resolve, retryDelayMs))
+            continue
+          }
+          throw new TaskError("MODEL_UNAVAILABLE", `模型连接失败，已尝试 ${attempt} 次`, 502)
         }
-        raw += decoder.decode()
-      } finally { reader.releaseLock() }
-      let envelope
-      try { envelope = object(JSON.parse(raw)) } catch { throw new TaskError("MODEL_INVALID_RESPONSE", "模型服务响应不是合法 JSON", 502) }
-      const choice = Array.isArray(envelope.choices) ? object(envelope.choices[0]) : {}
-      const message = choice.message ? object(choice.message) : {}
-      if (message.refusal || choice.finish_reason === "content_filter") throw new TaskError("MODEL_REFUSED", "模型拒绝处理此请求", 422)
-      if (choice.finish_reason !== "stop" || typeof message.content !== "string" || !message.content.trim()) throw new TaskError("MODEL_INVALID_RESPONSE", "模型回复不完整或格式不支持", 502)
-      if (signal.aborted) throw new TaskError("MODEL_TIMEOUT", "模型请求超时，未重试", 504)
-      last = { state: "connected", model: MODEL_ID, checkedAt: new Date().toISOString() }
-      return message.content
+      }
+      throw new TaskError("MODEL_UNAVAILABLE", "模型连接失败", 502)
     } catch (error) {
-      const safe = error instanceof TaskError ? error : new TaskError(signal.aborted ? "MODEL_TIMEOUT" : "MODEL_UNAVAILABLE", signal.aborted ? "模型请求超时，未重试" : "模型连接失败，未重试", 502)
-      last = { state: "error", model: MODEL_ID, checkedAt: new Date().toISOString(), code: safe.code }
+      const safe = error instanceof TaskError ? error : new TaskError(signal.aborted ? "MODEL_TIMEOUT" : "MODEL_UNAVAILABLE", signal.aborted ? "模型请求超时，已停止重试" : "模型连接失败", 502)
+      last = { state: "error", model, checkedAt: new Date().toISOString(), code: safe.code }
       throw safe
     }
   }

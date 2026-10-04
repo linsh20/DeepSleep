@@ -10,7 +10,7 @@ requireTS.extensions[".ts"] = (module, filename) => module._compile(ts.transpile
 const { MainTaskOrchestrator } = requireTS("../services/main-agent/orchestrator.ts")
 const { MemoryTaskRepository } = requireTS("../services/main-agent/task-repository.ts")
 const { DevelopmentRequirementInterpreter } = requireTS("../services/main-agent/requirement-interpreter.ts")
-const { ModelRequirementInterpreter, parseModelInterpretation, createBigBigTransport, boundedContext, MODEL_ENDPOINT, MODEL_ID } = requireTS("../services/main-agent/model-interpreter.ts")
+const { ModelRequirementInterpreter, parseModelInterpretation, createBigBigTransport, boundedContext } = requireTS("../services/main-agent/model-interpreter.ts")
 const { ShoppingStub } = requireTS("../services/main-agent/shopping-port.ts")
 const { createAgentHttp } = requireTS("../services/main-agent/http.ts")
 const { hkdToMinor } = requireTS("../services/main-agent/money.ts")
@@ -156,24 +156,46 @@ test("7: missing key makes no request; duplicate failed message adds no messages
   assert.equal(transport.status().state, "missing_config")
   assert.equal(network, 0)
 })
-test("transport uses documented path and supplied model, nonstreaming, no tool-calling or retries", async () => {
+test("transport uses configured path and model, nonstreaming and no tool-calling", async () => {
   let calls = 0
+  const endpoint = "https://provider.example/v1/chat/completions", model = "configured-model"
   const transport = createBigBigTransport(() => "fixture-key", async (url, options) => {
     calls++
-    assert.equal(url, MODEL_ENDPOINT)
-    assert.equal(url, "https://api.bigbigapi.com/chat/completions")
+    assert.equal(url, endpoint)
     const data = JSON.parse(options.body)
-    assert.equal(data.model, MODEL_ID)
+    assert.equal(data.model, model)
     assert.equal(data.stream, false)
     assert.equal(data.tools, undefined)
     assert.equal(options.redirect, "error")
     return Response.json({ choices: [{ finish_reason: "stop", message: { content: "OK" } }] })
-  })
+  }, { endpoint, model, retryDelayMs: 0 })
   assert.equal(transport.status().state, "untested")
   assert.equal(await transport.complete([{ role: "user", content: "Reply OK" }], new AbortController().signal), "OK")
   assert.equal(transport.status().state, "connected")
+  assert.equal(transport.status().model, model)
   assert.equal(calls, 1)
   assert.ok(!JSON.stringify(transport.status()).includes("fixture-key"))
+})
+test("transport retries one network or retryable HTTP failure", async () => {
+  for (const first of [new Error("network detail"), new Response("private provider detail", { status: 503 })]) {
+    let calls = 0
+    const transport = createBigBigTransport(() => "fixture-key", async () => {
+      calls++
+      if (calls === 1) {
+        if (first instanceof Error) throw first
+        return first
+      }
+      return Response.json({ choices: [{ finish_reason: "stop", message: { content: "OK" } }] })
+    }, { maxAttempts: 2, retryDelayMs: 0 })
+    assert.equal(await transport.complete([], new AbortController().signal), "OK")
+    assert.equal(calls, 2)
+  }
+})
+test("transport reports the configured attempt count after network exhaustion", async () => {
+  let calls = 0
+  const transport = createBigBigTransport(() => "fixture-key", async () => { calls++; throw new Error("private network detail") }, { maxAttempts: 2, retryDelayMs: 0 })
+  await assert.rejects(transport.complete([], new AbortController().signal), error => error.code === "MODEL_UNAVAILABLE" && /已尝试 2 次/.test(error.message) && !error.message.includes("private"))
+  assert.equal(calls, 2)
 })
 for (const [response, code] of [
   [() => new Response("secret-provider-detail", { status: 401 }), "MODEL_HTTP_ERROR"],

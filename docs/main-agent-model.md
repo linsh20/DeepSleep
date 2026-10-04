@@ -1,5 +1,13 @@
 > 后续 Shopping 请求契约升级与最新真实验收见 [main-agent-contract.md](./main-agent-contract.md)。以下保留对应阶段的历史记录。
 
+## 当前运行时修正（2026-10-04）
+
+Main Agent 不再使用下方历史阶段硬编码的端点和模型。运行时现在读取服务端 `LLM_API_URL`、`LLM_MODEL`、`LLM_API_KEY` 和 `LLM_TIMEOUT_MS`；当前配置会请求完整的 `/v1/chat/completions` 路径并显示实际配置的模型名。URL 必须是无内嵌用户名/密码的 HTTPS 地址。
+
+模型网络错误以及 HTTP 408、429、5xx 最多再重试一次；401/403、拒绝、内容过滤和无效响应不会重试。重试仍受 Main Agent 的总超时和取消信号约束，不会更换端点、模型或扩大请求内容。`scripts/check-llm.mjs` 使用同一组环境变量并遵循相同的两次尝试上限，且不输出密钥或供应商响应正文。
+
+2026-10-04 的可控传输测试、TypeScript、ESLint 和默认 `next build` 已通过。`GET /api/agent/model` 已确认加载配置的模型并处于 `untested`；真实联网请求仍须由持有本地密钥的用户明确触发，因此不把配置加载或替身测试称为真实供应商连通成功。
+
 # 第二阶段：真实模型需求理解与 ShoppingStub
 
 第一阶段提交 `47c4a87` 保留。本轮分支从该提交延续，不合并其他分支。现有状态转换表、TaskRepository、ShoppingStub 保持使用；没有真实 Shopping、授权、订单或支付。
