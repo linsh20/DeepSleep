@@ -44,7 +44,8 @@ export function adaptSearchCandidate(candidate: Candidate): ShoppingCandidate {
     if (expiries.length && expiries.every(Number.isFinite)) searchable.validUntil = new Date(Math.min(...expiries)).toISOString()
   }
   return { ...copy, text: { searchable }, missingFields: [...new Set([
-    ...copy.missingFields, "merchant", "quote", ...(searchable.value === null ? ["text.searchable"] : []),
+    ...copy.missingFields, ...(copy.merchant ? [] : ["merchant"]), "quote",
+    ...(searchable.value === null ? ["text.searchable"] : []),
   ])] }
 }
 

@@ -56,6 +56,7 @@ export type Candidate = {
   title: string
   url: string
   category: string
+  merchant?: { id: string; name: Fact<string>; platformId: Fact<string> }
   searchableText: Record<string, Fact<string>>
   attributes: Record<string, Fact<AttributeValue>>
   offer: {

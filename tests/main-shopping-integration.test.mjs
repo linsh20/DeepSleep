@@ -36,6 +36,28 @@ test('real Watsons snapshot reaches Main contract with candidates, evidence and 
  assert.equal(v.status,'needs_verification');assert.ok(v.search.candidates.length>0);assert.ok(v.candidates.every(c=>/lotion|emulsion/i.test(c.title)));assert.ok(v.missingFacts.includes('offer.shippingMinor'));assert.ok(v.missingFacts.includes('merchant.platformId'));assert.equal(v.recommendations.length,0);assert.equal(v.dataEnvironment,'verified_sources');assert.ok(v.diagnostics.candidateChecks.every(a=>a.checks.find(c=>c.conditionId==='system:category').outcome!=='match'));assert.ok(v.candidates.every(c=>c.offer.itemPriceMinor.source==='watsons-hk-api-snapshot'));assert.deepEqual(v.decisionRecord.requestSnapshot.requirement,r)
  const dir=process.env.INTEGRATION_EVIDENCE_DIR;if(dir)writeFileSync(join(dir,'watsons-result.json'),JSON.stringify({input:{requirement:r,quantity:1},output:v},null,2))
 })
+test('multi-platform offers reach Main and Agent B with stable identities and platform facts',async()=>{
+ const provider=new WatsonsSqliteProductProvider({databasePath:'data/watson/data/products.demo-multiplatform.db'})
+ const search=createProductSearch(provider,new DeterministicConditionScorer(),{recallLimit:500}).searchProducts
+ const shopping=new ContractShoppingPort({searchProducts:search},watsonsPolicy())
+ for(const [category,query,productId] of [
+  ['Moisturizer','BIRCH JUICE MOISTURIZING CREAM 80ml','watsons-product:BP_119795'],
+  ['Toner','LIGHTENING AND MOISTURIZING TONER 120ML','watsons-product:BP_235677'],
+ ]) {
+  const r={...requirement(),category,query,hardConstraints:[],preferences:[]}
+  const result=validateContractResult(await shopping.search({requirement:r,quantity:1},signal()))
+  const offers=result.candidates.filter(c=>c.productId===productId)
+  assert.equal(offers.length,3)
+  assert.equal(new Set(offers.map(c=>c.skuId)).size,1)
+  assert.equal(new Set(offers.map(c=>c.offerId)).size,3)
+  assert.deepEqual(new Set(offers.map(c=>c.merchant.platformId.value)),new Set(['watsons-hk','sasa-hk','mannings-hk']))
+  assert.ok(offers.every(c=>!c.missingFields.includes('merchant')))
+  assert.ok(offers.every(c=>c.merchant.name.value && c.offer.itemPriceMinor.value>0))
+  assert.equal(result.status,'needs_verification')
+  assert.ok(result.missingFacts.includes('offer.shippingMinor'))
+  assert.equal(result.recommendations.length,0)
+ }
+})
 test('complete mock quote runs actual A and contract B result_ready, original Chinese soft intent retained',async()=>{
  const r=requirement(),v=validateContractResult(await port().search({requirement:r,quantity:1},signal()));assert.equal(v.status,'result_ready');assert.equal(v.plan.priceMinor.value,18000);assert.equal(v.recommendations[0].evidenceStatus,'mock');assert.equal(v.recommendations[0].preferenceChecks[0].outcome,'match');assert.equal(v.dataEnvironment,'development_mock');assert.equal(v.searchInput.useLlm,false);assert.ok(v.decisionRecord);assert.ok(v.search.candidates[0].conditionScores.every(c=>c.source!=='llm'))
 })
@@ -43,7 +65,7 @@ test('no-match, missing verification and source failure remain distinct; malform
  const r=requirement();r.query='nonexistent-special-product';assert.equal((await port().search({requirement:r,quantity:1},signal())).status,'no_match');const missing=await port(mockSearch(),{}).search({requirement:requirement(),quantity:1},signal());assert.equal(missing.status,'needs_verification');const failed=await port(async()=>{throw Error('offline')}).search({requirement:requirement(),quantity:1},signal());assert.equal(failed.status,'failed');assert.equal(failed.stopReason,'source_failed');missing.candidates[0].offer.itemPriceMinor.status='trusted';assert.throws(()=>validateContractResult(missing),{code:'INVALID_INPUT'})
 })
 test('main persisted versions update actual port input, keep history, dedupe and reject Watsons payment bridge',async t=>{
- const dir=mkdtempSync(join(tmpdir(),'main-shopping-'));t.after(()=>rmSync(dir,{recursive:true,force:true}));const db=new SqlitePurchaseRepository(join(dir,'isolated.sqlite'));t.after(()=>db.close());const repo=new SqliteTaskRepository(db.db);let calls=0;const inputs=[];const a=mockSearch();const p=port(async(i,c)=>{calls++;inputs.push(structuredClone(i));return a(i,c)});const agent=new MainTaskOrchestrator(repo,new DevelopmentRequirementInterpreter(),p,{timeoutMs:2000,retries:0});let n=0;const id=()=>`request-${++n}`;let task=await agent.create('owner',id());const {taskId,requirementVersion,...draft}=requirement();void taskId;void requirementVersion;
+ const dir=mkdtempSync(join(tmpdir(),'main-shopping-'));const db=new SqlitePurchaseRepository(join(dir,'isolated.sqlite'));t.after(()=>{db.close();rmSync(dir,{recursive:true,force:true,maxRetries:5,retryDelay:100})});const repo=new SqliteTaskRepository(db.db);let calls=0;const inputs=[];const a=mockSearch();const p=port(async(i,c)=>{calls++;inputs.push(structuredClone(i));return a(i,c)});const agent=new MainTaskOrchestrator(repo,new DevelopmentRequirementInterpreter(),p,{timeoutMs:2000,retries:0});let n=0;const id=()=>`request-${++n}`;let task=await agent.create('owner',id());const {taskId,requirementVersion,...draft}=requirement();void taskId;void requirementVersion;
  task=await agent.save(task.taskId,'owner',{requestId:id(),expectedVersion:0,intent:'purchase',requirementDraft:{...draft,quantity:1}});let requestId=id();task=await agent.search(task.taskId,'owner',requestId,1);assert.equal(task.status,'result_ready');await agent.search(task.taskId,'owner',requestId,1);assert.equal(calls,1)
  const updated={...task.requirementDraft,budget:{maxMinor:18000,scope:'delivered'},hardConstraints:[{field:'attributes.volumeMl',op:'gte',value:200},{field:'attributes.volumeMl',op:'lte',value:300},{field:'text.searchable',op:'notContainsAny',value:['香精']}]};task=await agent.save(task.taskId,'owner',{requestId:id(),expectedVersion:1,intent:'purchase',requirementDraft:updated});assert.equal(task.shoppingHistory.length,1);assert.equal(task.shoppingResult,null);task=await agent.search(task.taskId,'owner',id(),2);assert.equal(inputs[1].range_conditions[0].min,200);assert.ok(inputs[1].exclude_keywords.length);assert.equal(inputs[1].requirementVersion,2);assert.equal(task.shoppingResult.decisionRecord.requestSnapshot.requirement.budget.maxMinor,18000);assert.throws(()=>sandboxSource(task),{code:'NEEDS_VERIFICATION'});const reopened=new SqliteTaskRepository(db.db);assert.equal(reopened.get(task.taskId,'owner').shoppingHistory[0].result.kind,'shopping_contract_v1')
 })

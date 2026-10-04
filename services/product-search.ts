@@ -271,6 +271,18 @@ function normalizeProduct(raw: RawProduct, warnings: string[]): Candidate {
     fetchedAt: raw.fetchedAt,
     status: raw.status,
   })
+  let merchant: Candidate["merchant"]
+  if (raw.merchant !== undefined) {
+    if (!isRecord(raw.merchant) || !nonempty(raw.merchant.id) ||
+        !nonempty(raw.merchant.name) || !nonempty(raw.merchant.platformId)) {
+      throw new ProductProviderError("SOURCE_UNAVAILABLE", "Malformed merchant")
+    }
+    merchant = {
+      id: raw.merchant.id,
+      name: fact(raw.merchant.name),
+      platformId: fact(raw.merchant.platformId),
+    }
+  }
   const searchableText: Candidate["searchableText"] = {}
   for (const [field, value] of Object.entries(raw.searchableText)) {
     if (typeof value === "string" || value === null) searchableText[field] = fact(value)
@@ -322,6 +334,7 @@ function normalizeProduct(raw: RawProduct, warnings: string[]): Candidate {
     title: raw.title,
     url: raw.url,
     category: raw.category,
+    ...(merchant ? { merchant } : {}),
     searchableText,
     attributes,
     offer,
